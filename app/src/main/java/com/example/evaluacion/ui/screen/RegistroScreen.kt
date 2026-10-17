@@ -118,11 +118,21 @@ fun RegistroScreen(
             Text("Acepto los términos y condiciones")
         }
 
+        //Mesaje de error
+        estado.errores.terminos?.let { mensaje ->
+            Text(
+                text = mensaje,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
+
         // Botón: enviar
         Button(
             onClick = {
                 if (viewModel.validarFormulario()) {
-                    navController.navigate("resumen")
+                    viewModel.guardar {
+                        navController.navigate("resumen")
+                    }
                 }
             },
             modifier = Modifier.fillMaxWidth()

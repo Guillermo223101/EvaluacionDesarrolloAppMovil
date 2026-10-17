@@ -2,4 +2,7 @@
 plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.kotlin.compose) apply false
+
+    //Procesador de anotaciones utilizado por ROOM
+    alias(libs.plugins.ksp) apply false
 }

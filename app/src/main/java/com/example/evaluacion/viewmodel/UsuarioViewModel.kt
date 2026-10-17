@@ -1,13 +1,20 @@
 package com.example.evaluacion.viewmodel
 
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.evaluacion.model.UsuarioErrores
 import com.example.evaluacion.model.UsuarioUiState
+import com.example.evaluacion.model.data.local.UsuarioDatabase
+import com.example.evaluacion.model.data.local.UsuarioEntity
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
-class UsuarioViewModel : ViewModel() {
+class UsuarioViewModel(app: Application): AndroidViewModel(app) {
+    private val dao = UsuarioDatabase.getDatabase(app).usuarioDao()
 
     // Estado interno mutable
     private val _estado = MutableStateFlow(UsuarioUiState())
@@ -58,7 +65,10 @@ class UsuarioViewModel : ViewModel() {
     // Actualiza checkbox de aceptación
     fun onAceptarTerminosChange(valor: Boolean) {
         _estado.update {
-            it.copy(aceptaTerminos = valor)
+            it.copy(
+                    aceptaTerminos = valor,
+                    errores = it.errores.copy(terminos = null)
+                )
         }
     }
 
@@ -81,6 +91,10 @@ class UsuarioViewModel : ViewModel() {
 
             direccion = if (estadoActual.direccion.isBlank())
                 "Campo obligatorio"
+            else null,
+
+            terminos = if (!estadoActual.aceptaTerminos)
+                "Debes aceptar los terminos y condiciones"
             else null
         )
 
@@ -88,7 +102,8 @@ class UsuarioViewModel : ViewModel() {
             errores.nombre,
             errores.correo,
             errores.clave,
-            errores.direccion
+            errores.direccion,
+            errores.terminos
         ).isNotEmpty()
 
         _estado.update {
@@ -97,4 +112,22 @@ class UsuarioViewModel : ViewModel() {
 
         return !hayErrores
     }
+
+    //GUARDAR EN ROOM
+    fun guardar(onListo: () -> Unit) {
+        val a = _estado.value
+        viewModelScope.launch {
+            dao.insertar(
+                UsuarioEntity(
+                    nombre = a.nombre,
+                    correo = a.correo,
+                    clave = a.clave,
+                    direccion = a.direccion
+                )
+            )
+            onListo()
+        }
+    }
 }
+
+
