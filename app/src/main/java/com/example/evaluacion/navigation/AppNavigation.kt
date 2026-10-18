@@ -10,10 +10,11 @@ import androidx.navigation.compose.rememberNavController
 
 import com.example.evaluacion.ui.screen.RegistroScreen
 import com.example.evaluacion.ui.screen.ResumenScreen
+import com.example.evaluacion.ui.screen.CrearSolicitudScreen
+import com.example.evaluacion.ui.screen.ListaSolicitudesScreen
 import com.example.evaluacion.ui.view.QrScannerScreen
 import com.example.evaluacion.ui.viewmodel.QrViewModel
 import com.example.evaluacion.viewmodel.UsuarioViewModel
-import com.example.evaluacion.ui.screen.CrearSolicitudScreen
 import com.example.evaluacion.viewmodel.SolicitudViewModel
 
 @Composable
@@ -23,12 +24,13 @@ fun AppNavigation(
     onRequestCameraPermission: () -> Unit
 ) {
 
+    // Controlador de navegación
     val navController = rememberNavController()
 
-    // ViewModel compartido entre Registro y Resumen
+    // ViewModel de usuarios
     val usuarioViewModel: UsuarioViewModel = viewModel()
 
-    //ViewModel del formulario de solicitudes
+    // ViewModel de solicitudes
     val solicitudViewModel: SolicitudViewModel = viewModel()
 
     NavHost(
@@ -49,16 +51,22 @@ fun AppNavigation(
         composable("resumen") {
             ResumenScreen(
                 viewModel = usuarioViewModel,
+
                 onOpenQr = {
                     navController.navigate("qr")
                 },
+
                 onCrearSolicitud = {
                     navController.navigate("crear_solicitud")
+                },
+
+                onVerSolicitudes = {
+                    navController.navigate("lista_solicitudes")
                 }
             )
         }
 
-        // Pantalla de lector QR
+        // Lector QR
         composable("qr") {
             QrScannerScreen(
                 viewModel = qrViewModel,
@@ -67,12 +75,29 @@ fun AppNavigation(
             )
         }
 
-        //Formmulario para crear solicitudes
-        composable("crear_solicitud"){
+        // Lista de solicitudes
+        composable("lista_solicitudes") {
+            ListaSolicitudesScreen(
+                viewModel = solicitudViewModel,
+
+                onNuevaSolicitud = {
+                    navController.navigate("crear_solicitud")
+                }
+            )
+        }
+
+        // Formulario de solicitudes
+        composable("crear_solicitud") {
             CrearSolicitudScreen(
                 viewModel = solicitudViewModel,
+
                 onGuardada = {
-                    navController.popBackStack()
+                    navController.navigate("lista_solicitudes") {
+                        popUpTo("resumen") {
+                            inclusive = false
+                        }
+                        launchSingleTop = true
+                    }
                 }
             )
         }

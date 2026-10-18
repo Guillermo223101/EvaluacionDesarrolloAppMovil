@@ -1,36 +1,52 @@
+
 package com.example.evaluacion.ui.screen
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.evaluacion.viewmodel.UsuarioViewModel
-import androidx.compose.material3.Button
 
-//LEER EL ESTADO QUE YA TIENE EL VIEWMODEL Y MOSTRAR EL RESUMEN
+import com.example.evaluacion.viewmodel.UsuarioViewModel
+
 @Composable
 fun ResumenScreen(
     viewModel: UsuarioViewModel,
     onOpenQr: () -> Unit,
-    onCrearSolicitud: () -> Unit
+    onCrearSolicitud: () -> Unit,
+    onVerSolicitudes: () -> Unit
 ) {
+
+    // Obtener los datos del usuario
     val estado by viewModel.estado.collectAsState()
-    Column(Modifier.padding(16.dp)) {
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+
+        // Título
         Text(
-            "Resumen del Registro",
+            text = "Resumen del Registro",
             style = MaterialTheme.typography.headlineMedium
         )
 
+        // Información del usuario
         Text("Nombre: ${estado.nombre}")
         Text("Correo: ${estado.correo}")
         Text("Dirección: ${estado.direccion}")
-        Text("Contraseña: ${"*".repeat(estado.clave.length)}")
+
+        Text(
+            "Contraseña: ${"*".repeat(estado.clave.length)}"
+        )
 
         Text(
             "Términos: ${
@@ -41,20 +57,35 @@ fun ResumenScreen(
             }"
         )
 
+        HorizontalDivider()
 
-        // Botón para navegar al lector QR
+        Text(
+            text = "Funciones de la aplicación",
+            style = MaterialTheme.typography.titleMedium
+        )
+
+        // Abrir lector QR
         Button(
-            onClick = onOpenQr
+            onClick = onOpenQr,
+            modifier = Modifier.fillMaxWidth()
         ) {
             Text("Abrir lector QR")
         }
 
-        //Boton para crear solicitudes de clientes
+        // Crear solicitud
         Button(
             onClick = onCrearSolicitud,
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Crear nueva solicitud")
+        }
+
+        // Consultar solicitudes guardadas
+        Button(
+            onClick = onVerSolicitudes,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Ver solicitudes")
         }
     }
 }

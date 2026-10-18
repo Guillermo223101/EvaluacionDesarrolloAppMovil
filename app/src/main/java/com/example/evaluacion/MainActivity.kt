@@ -52,8 +52,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        hasCameraPermission =
-            CameraPermissionHelper.hasCameraPermission(this)
+        hasCameraPermission = CameraPermissionHelper.hasCameraPermission(this)
 
         enableEdgeToEdge()
 
@@ -78,8 +77,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-
-        hasCameraPermission =
-            CameraPermissionHelper.hasCameraPermission(this)
+        hasCameraPermission = CameraPermissionHelper.hasCameraPermission(this)
     }
 }
