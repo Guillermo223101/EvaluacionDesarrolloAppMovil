@@ -10,10 +10,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.evaluacion.viewmodel.UsuarioViewModel
+import androidx.compose.material3.Button
 
 //LEER EL ESTADO QUE YA TIENE EL VIEWMODEL Y MOSTRAR EL RESUMEN
 @Composable
-fun ResumenScreen(viewModel: UsuarioViewModel){
+fun ResumenScreen(
+    viewModel: UsuarioViewModel,
+    onOpenQr: () -> Unit
+) {
     val estado by viewModel.estado.collectAsState()
     Column(Modifier.padding(16.dp)) {
         Text(
@@ -34,5 +38,14 @@ fun ResumenScreen(viewModel: UsuarioViewModel){
                     "No aceptados"
             }"
         )
+
+
+        // Botón para navegar al lector QR
+        Button(
+            onClick = onOpenQr
+        ) {
+            Text("Abrir lector QR")
+        }
+
     }
 }
