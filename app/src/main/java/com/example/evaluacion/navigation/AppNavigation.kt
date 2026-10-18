@@ -13,6 +13,8 @@ import com.example.evaluacion.ui.screen.ResumenScreen
 import com.example.evaluacion.ui.view.QrScannerScreen
 import com.example.evaluacion.ui.viewmodel.QrViewModel
 import com.example.evaluacion.viewmodel.UsuarioViewModel
+import com.example.evaluacion.ui.screen.CrearSolicitudScreen
+import com.example.evaluacion.viewmodel.SolicitudViewModel
 
 @Composable
 fun AppNavigation(
@@ -25,6 +27,9 @@ fun AppNavigation(
 
     // ViewModel compartido entre Registro y Resumen
     val usuarioViewModel: UsuarioViewModel = viewModel()
+
+    //ViewModel del formulario de solicitudes
+    val solicitudViewModel: SolicitudViewModel = viewModel()
 
     NavHost(
         navController = navController,
@@ -46,6 +51,9 @@ fun AppNavigation(
                 viewModel = usuarioViewModel,
                 onOpenQr = {
                     navController.navigate("qr")
+                },
+                onCrearSolicitud = {
+                    navController.navigate("crear_solicitud")
                 }
             )
         }
@@ -56,6 +64,16 @@ fun AppNavigation(
                 viewModel = qrViewModel,
                 hasCameraPermission = hasCameraPermission,
                 onRequestPermission = onRequestCameraPermission
+            )
+        }
+
+        //Formmulario para crear solicitudes
+        composable("crear_solicitud"){
+            CrearSolicitudScreen(
+                viewModel = solicitudViewModel,
+                onGuardada = {
+                    navController.popBackStack()
+                }
             )
         }
     }

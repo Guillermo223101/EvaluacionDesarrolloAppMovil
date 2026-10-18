@@ -1,6 +1,7 @@
 package com.example.evaluacion.ui.screen
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -16,7 +17,8 @@ import androidx.compose.material3.Button
 @Composable
 fun ResumenScreen(
     viewModel: UsuarioViewModel,
-    onOpenQr: () -> Unit
+    onOpenQr: () -> Unit,
+    onCrearSolicitud: () -> Unit
 ) {
     val estado by viewModel.estado.collectAsState()
     Column(Modifier.padding(16.dp)) {
@@ -47,5 +49,12 @@ fun ResumenScreen(
             Text("Abrir lector QR")
         }
 
+        //Boton para crear solicitudes de clientes
+        Button(
+            onClick = onCrearSolicitud,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Crear nueva solicitud")
+        }
     }
 }
