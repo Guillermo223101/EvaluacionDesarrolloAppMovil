@@ -121,10 +121,15 @@ class UsuarioViewModel(app: Application): AndroidViewModel(app) {
                 UsuarioEntity(
                     nombre = a.nombre,
                     correo = a.correo,
-                    clave = a.clave,
+                    clave = "",
                     direccion = a.direccion
                 )
             )
+            // Limpiar la contraseña del estado temporal
+            _estado.update {
+                it.copy(clave = "")
+            }
+
             onListo()
         }
     }

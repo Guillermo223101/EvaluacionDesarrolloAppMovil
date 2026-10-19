@@ -45,7 +45,7 @@ fun ResumenScreen(
         Text("Dirección: ${estado.direccion}")
 
         Text(
-            "Contraseña: ${"*".repeat(estado.clave.length)}"
+            "Registro de demostración: sin contraseña almacenada"
         )
 
         Text(
