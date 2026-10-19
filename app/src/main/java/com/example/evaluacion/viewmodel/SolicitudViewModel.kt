@@ -15,6 +15,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+
+import android.net.Uri
+import com.example.evaluacion.utils.EvidenciaStorage
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
+import java.io.File
+
+
 class SolicitudViewModel(app: Application) : AndroidViewModel(app) {
 
     // Acceso al DAO de solicitudes
@@ -95,12 +104,15 @@ class SolicitudViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     // Guardar solicitud mediante Room
-    fun guardar(onListo: () -> Unit) {
+    fun guardar(
+        imagenUri: Uri?,
+        onListo: () -> Unit
+    ) {
 
-        // Evita guardar dos veces mientras está procesando
+        // Evitar guardar dos veces
         if (_estado.value.guardando) return
 
-        // No permite guardar si hay errores
+        // Comprobar los datos del formulario
         if (!validarFormulario()) return
 
         val datos = _estado.value
@@ -114,39 +126,67 @@ class SolicitudViewModel(app: Application) : AndroidViewModel(app) {
 
         viewModelScope.launch {
 
+            var rutaImagen: String? = null
+            var guardadoCorrectamente = false
+
             try {
 
+                // Copiar la fotografía al almacenamiento privado
+                if (imagenUri != null) {
+                    rutaImagen = EvidenciaStorage.copiarImagen(
+                        context = getApplication<Application>(),
+                        uri = imagenUri
+                    )
+                }
+
+                // Guardar solicitud y ruta de evidencia en Room
                 dao.insertar(
                     SolicitudEntity(
                         titulo = datos.titulo.trim(),
                         descripcion = datos.descripcion.trim(),
-                        categoria = datos.categoria
+                        categoria = datos.categoria,
+                        evidenciaPath = rutaImagen
                     )
                 )
 
-                // Limpiar formulario después de guardar
-                _estado.value = SolicitudUiState()
+                guardadoCorrectamente = true
 
-                // Avisar a la pantalla que terminó
-                onListo()
+                // Limpiar el formulario
+                _estado.value = SolicitudUiState()
 
             } catch (e: CancellationException) {
                 throw e
+
             } catch (e: Exception) {
 
                 _estado.update {
                     it.copy(
                         errorGuardado =
-                            "No se pudo guardar la solicitud"
+                            "No se pudo guardar la solicitud o su evidencia"
                     )
                 }
 
             } finally {
 
+                // Si falló el guardado, eliminar la copia sobrante
+                if (!guardadoCorrectamente) {
+                    withContext(NonCancellable + Dispatchers.IO) {
+                        rutaImagen?.let { ruta ->
+                            File(ruta).delete()
+                        }
+                    }
+                }
+
                 _estado.update {
                     it.copy(guardando = false)
                 }
             }
+
+            // Navegar únicamente después de guardar correctamente
+            if (guardadoCorrectamente) {
+                onListo()
+            }
         }
     }
+
 }

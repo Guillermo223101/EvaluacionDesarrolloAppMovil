@@ -75,6 +75,8 @@ dependencies {
     implementation("com.google.mlkit:barcode-scanning:17.3.0")
 
 
+    implementation("androidx.compose.material:material-icons-core")
+
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

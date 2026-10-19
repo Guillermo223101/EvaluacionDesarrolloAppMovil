@@ -7,7 +7,7 @@ import androidx.room.Room
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [UsuarioEntity::class, SolicitudEntity::class], version = 2)
+@Database(entities = [UsuarioEntity::class, SolicitudEntity::class], version = 3)
 abstract class UsuarioDatabase : RoomDatabase() {
     abstract fun usuarioDao() : UsuarioDao
 
@@ -35,6 +35,17 @@ abstract class UsuarioDatabase : RoomDatabase() {
                 )
             }
         }
+
+        // Migración de la versión 2 a la versión 3
+        // Agrega la columna de evidencia sin borrar registros
+        private val MIGRATION_2_3 = object : Migration(2, 3){
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE solicitudes ADD COLUMN evidenciaPath TEXT"
+                )
+            }
+        }
+
         fun getDatabase(context: Context): UsuarioDatabase{
             return INSTANCE ?: synchronized(this){
                 Room.databaseBuilder(
@@ -42,7 +53,7 @@ abstract class UsuarioDatabase : RoomDatabase() {
                     UsuarioDatabase::class.java,
                     "usuario_database"
                 )
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build()
                     .also { INSTANCE = it }
             }

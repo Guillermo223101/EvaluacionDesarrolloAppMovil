@@ -11,5 +11,7 @@ data class SolicitudEntity(
     val descripcion: String,
     val categoria: String,
     val estado: String = "Recibida",
-    val fechaCreacion: Long = System.currentTimeMillis()
+    val fechaCreacion: Long = System.currentTimeMillis(),
+    // Ruta de la imagen guardada en el dispositivo
+    val evidenciaPath: String? = null
 )
