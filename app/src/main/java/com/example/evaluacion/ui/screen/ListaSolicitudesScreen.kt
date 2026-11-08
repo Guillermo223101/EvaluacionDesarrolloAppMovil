@@ -35,6 +35,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
 
+import com.example.integraciones.BotonCompartirSolicitudWhatsApp
+import com.example.integraciones.SolicitudCompartible
+
 @Composable
 fun ListaSolicitudesScreen(
     viewModel: SolicitudViewModel,
@@ -186,8 +189,6 @@ fun ListaSolicitudesScreen(
                                 )
                             }
 
-
-
                             // Mostrar fotografía si la solicitud tiene evidencia
                             solicitud.evidenciaPath?.let { ruta ->
 
@@ -200,6 +201,18 @@ fun ListaSolicitudesScreen(
 
                                 FotoEvidencia(ruta = ruta)
                             }
+
+                            // Compartir solicitud mediante WhatsApp Bussines
+                            HorizontalDivider()
+                            BotonCompartirSolicitudWhatsApp(
+                                solicitud = SolicitudCompartible(
+                                    codigo = codigo,
+                                    titulo = solicitud.titulo,
+                                    categoria = solicitud.categoria,
+                                    estado = solicitud.estado
+                                ),
+                                modifier = Modifier.fillMaxWidth()
+                            )
 
                         }
                     }

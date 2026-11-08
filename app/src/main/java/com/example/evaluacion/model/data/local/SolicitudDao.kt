@@ -12,7 +12,7 @@ interface SolicitudDao {
 
     // Insertar una nueva solicitud en la base de datos
     @Insert
-    suspend fun insertar(solicitud: SolicitudEntity)
+    suspend fun insertar(solicitud: SolicitudEntity): Long
 
     // Obtener todas las solicitudes, ordenadas
     // desde la más reciente hasta la más antigua

@@ -17,6 +17,8 @@ import com.example.evaluacion.ui.viewmodel.QrViewModel
 import com.example.evaluacion.viewmodel.UsuarioViewModel
 import com.example.evaluacion.viewmodel.SolicitudViewModel
 
+import com.example.integraciones.recordarNotificadorNuevaSolicitud
+
 @Composable
 fun AppNavigation(
     qrViewModel: QrViewModel,
@@ -32,6 +34,9 @@ fun AppNavigation(
 
     // ViewModel de solicitudes
     val solicitudViewModel: SolicitudViewModel = viewModel()
+
+    //Notificador de nuevas solicitudes
+    val notificarSolicitud = recordarNotificadorNuevaSolicitud()
 
     NavHost(
         navController = navController,
@@ -91,7 +96,10 @@ fun AppNavigation(
             CrearSolicitudScreen(
                 viewModel = solicitudViewModel,
 
-                onGuardada = {
+                onGuardada = { codigo, titulo ->
+                    //Mostrar notificacion de solicitud nueva
+                    notificarSolicitud(codigo, titulo)
+                    //Navegar a la lista de solicitudes
                     navController.navigate("lista_solicitudes") {
                         popUpTo("resumen") {
                             inclusive = false

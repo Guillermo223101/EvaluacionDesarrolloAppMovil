@@ -27,7 +27,7 @@ import androidx.compose.material3.Icon
 @Composable
 fun CrearSolicitudScreen(
     viewModel: SolicitudViewModel,
-    onGuardada: () -> Unit
+    onGuardada: (codigo: String, titulo: String) -> Unit
 ) {
 
     // Obtener estado desde el ViewModel

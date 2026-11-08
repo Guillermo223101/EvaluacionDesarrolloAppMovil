@@ -106,7 +106,7 @@ class SolicitudViewModel(app: Application) : AndroidViewModel(app) {
     // Guardar solicitud mediante Room
     fun guardar(
         imagenUri: Uri?,
-        onListo: () -> Unit
+        onListo: (codigo: String, titulo: String) -> Unit
     ) {
 
         // Evitar guardar dos veces
@@ -128,6 +128,7 @@ class SolicitudViewModel(app: Application) : AndroidViewModel(app) {
 
             var rutaImagen: String? = null
             var guardadoCorrectamente = false
+            var idGuardado = 0L
 
             try {
 
@@ -140,7 +141,7 @@ class SolicitudViewModel(app: Application) : AndroidViewModel(app) {
                 }
 
                 // Guardar solicitud y ruta de evidencia en Room
-                dao.insertar(
+                idGuardado = dao.insertar(
                     SolicitudEntity(
                         titulo = datos.titulo.trim(),
                         descripcion = datos.descripcion.trim(),
@@ -184,7 +185,8 @@ class SolicitudViewModel(app: Application) : AndroidViewModel(app) {
 
             // Navegar únicamente después de guardar correctamente
             if (guardadoCorrectamente) {
-                onListo()
+                val codigo = "SOL-${idGuardado.toString().padStart(4, '0')}"
+                onListo(codigo, datos.titulo.trim())
             }
         }
     }
