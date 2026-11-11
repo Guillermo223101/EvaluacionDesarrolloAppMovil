@@ -191,4 +191,127 @@ class SolicitudViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    // Obtener una solicitud por su ID para editarla
+    suspend fun obtenerSolicitud(id: Long): SolicitudEntity? {
+        return dao.obtenerPorId(id)
+    }
+
+    // UPDATE
+    fun actualizar(
+        original: SolicitudEntity,
+        titulo: String,
+        descripcion: String,
+        categoria: String,
+        nuevaImagen: Uri?,
+        onExito: () -> Unit,
+        onError: (String) -> Unit
+    ){
+        // Validaciones del formulario
+        if (titulo.isBlank()) {
+            onError("El titulo es obligatorio")
+            return
+        }
+        if (descripcion.trim().length < 10) {
+            onError("La descripcion debe tener al menos 10 caracteres")
+            return
+        }
+        if (categoria.isBlank()) {
+            onError("Debe seleccionar una categoria")
+            return
+        }
+
+        viewModelScope.launch {
+            var rutaNueva: String? = null
+            var actualizado = false
+
+            try {
+                //Comprobar que la solicitud todavia existe
+                val solicitudActual = dao.obtenerPorId(original.id)
+
+                if (solicitudActual == null){
+                    onError("La solicitud ya no existe")
+                    return@launch
+                }
+                // Guardar una imagen nueva
+                if (nuevaImagen != null){
+                    rutaNueva = EvidenciaStorage.copiarImagen(
+                        context = getApplication<Application>(),
+                        uri = nuevaImagen
+                    )
+                }
+                //Conservar la imagen anterior si no se cambio
+                val rutaFinal = rutaNueva ?: solicitudActual.evidenciaPath
+                // Actualizar los datos utilizando ROOM
+                val filas = dao.actualizar(
+                    solicitudActual.copy(
+                        titulo = titulo.trim(),
+                        descripcion = descripcion.trim(),
+                        categoria = categoria,
+                        evidenciaPath = rutaFinal
+                    )
+                )
+                if (filas != 1){
+                    onError("No se pudo encontrar la solicitud")
+                    return@launch
+                }
+                actualizado = true
+                // Si se reemplazo la imagen, se borra la anterior
+                if (rutaNueva != null){
+                    solicitudActual.evidenciaPath?.let { ruta ->
+                        withContext(Dispatchers.IO){
+                            runCatching { File(ruta).delete() }
+                        }
+                    }
+                }
+                onExito()
+            } catch (e: CancellationException){
+                throw e
+            } catch (e: Exception){
+                if (!actualizado){
+                    onError("No se pudo actualizar la solicitud")
+                }
+            } finally {
+                // Si fallo, eliminara la nueva copia sobrante
+                if (!actualizado){
+                    withContext(NonCancellable + Dispatchers.IO) {
+                        rutaNueva?.let { ruta ->
+                            File(ruta).delete()
+                        }
+                    }
+                }
+            }
+
+        }
+    }
+
+    // DELETE
+    fun eliminar(
+        solicitud: SolicitudEntity,
+        onExito: () -> Unit,
+        onError: (String) -> Unit
+    ){
+        viewModelScope.launch {
+            try {
+                //Eliminar el registro de ROOM
+                val filasEliminadas = dao.eliminar(solicitud)
+
+                if (filasEliminadas != 1 ){
+                    onError("La solicitud ya no existe")
+                    return@launch
+                }
+                // Eliminar la imagen asociada
+                solicitud.evidenciaPath?.let { ruta ->
+                    withContext(Dispatchers.IO) {
+                        runCatching { File(ruta).delete() }
+                    }
+                }
+                // Informar eliminacion exitosa
+                onExito()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                onError("Np se pudo eliminar la solicitud")
+            }
+        }
+    }
 }
