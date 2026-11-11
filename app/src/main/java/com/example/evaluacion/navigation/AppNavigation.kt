@@ -19,6 +19,10 @@ import com.example.evaluacion.viewmodel.SolicitudViewModel
 
 import com.example.integraciones.recordarNotificadorNuevaSolicitud
 
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import com.example.evaluacion.ui.screen.EditarSolicitudScreen
+
 @Composable
 fun AppNavigation(
     qrViewModel: QrViewModel,
@@ -87,6 +91,9 @@ fun AppNavigation(
 
                 onNuevaSolicitud = {
                     navController.navigate("crear_solicitud")
+                },
+                onEditarSolicitud = { id ->
+                    navController.navigate("editar_solicitud/$id")
                 }
             )
         }
@@ -106,6 +113,29 @@ fun AppNavigation(
                         }
                         launchSingleTop = true
                     }
+                }
+            )
+        }
+
+        // Pantalla para Editar
+        composable(
+            route = "editar_solicitud/{id}",
+            arguments = listOf(
+                navArgument("id"){
+                    type = NavType.LongType
+                }
+            )
+        ){ entry ->
+            val id = entry.arguments?.getLong("id") ?: -1L
+
+            EditarSolicitudScreen(
+                solicitudId = id,
+                viewModel = solicitudViewModel,
+                onActualizada = {
+                    navController.popBackStack()
+                },
+                onVolver = {
+                    navController.popBackStack()
                 }
             )
         }

@@ -38,12 +38,23 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import com.example.integraciones.BotonCompartirSolicitudWhatsApp
 import com.example.integraciones.SolicitudCompartible
 
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
+import com.example.evaluacion.model.data.local.SolicitudEntity
+
 @Composable
 fun ListaSolicitudesScreen(
     viewModel: SolicitudViewModel,
-    onNuevaSolicitud: () -> Unit
+    onNuevaSolicitud: () -> Unit,
+    onEditarSolicitud: (Long) -> Unit
 ) {
-
+    //Contexto necesario para mostrar mensaje
+    val context = LocalContext.current
+    //Solicitud que el usuario desea eliminar
+    var pendienteElimnar by remember {
+        mutableStateOf<SolicitudEntity?>(null)
+    }
     // Observamos las solicitudes almacenadas en Room
     val solicitudes by viewModel.solicitudes.collectAsState(
         initial = emptyList()
@@ -213,12 +224,100 @@ fun ListaSolicitudesScreen(
                                 ),
                                 modifier = Modifier.fillMaxWidth()
                             )
+                            HorizontalDivider()
+                            //Botones para editar y eliminar solicitud
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                // Boton EDITAR
+                                OutlinedButton(
+                                    onClick = {
+                                        onEditarSolicitud(solicitud.id)
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(
+                                        text = "Editar"
+                                    )
+                                }
+                                // Boton ELIMINAR
+                                OutlinedButton(
+                                    onClick = {
+                                        pendienteElimnar = solicitud
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(
+                                        text = "Eliminar",
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                }
+                            }
 
                         }
                     }
                 }
             }
         }
+    }
+    // Ventana de confirmar eliminacion
+    pendienteElimnar?.let { solicitud ->
+        AlertDialog(
+            onDismissRequest = {
+                pendienteElimnar = null
+            },
+            title = {
+                Text("Eliminar solicitud")
+            },
+            text = {
+                Text(
+                    "¿Estás seguro de eliminar SOL-" +
+                    solicitud.id.toString().padStart(4, '0') +
+                    "? Esta acción no se puede deshacer."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        pendienteElimnar = null
+
+                        viewModel.eliminar(
+                            solicitud = solicitud,
+                            onExito = {
+                                Toast.makeText(
+                                    context,
+                                    "Solicitud elinada correctamente",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            },
+                            onError = { mensaje ->
+                                Toast.makeText(
+                                    context,
+                                    mensaje,
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        )
+                    }
+                ) {
+                    Text(
+                        "Si, eliminar",
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        pendienteElimnar = null
+                    }
+                ) {
+                    Text("Cancelar")
+                }
+            }
+
+        )
     }
 }
 
