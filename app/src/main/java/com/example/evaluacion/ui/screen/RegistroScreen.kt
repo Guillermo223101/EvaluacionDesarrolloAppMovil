@@ -20,7 +20,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import com.example.evaluacion.viewmodel.UsuarioViewModel
 
 
@@ -31,17 +30,26 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Icon
 
+import androidx.compose.material3.TextButton
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 
 @Composable
 fun RegistroScreen(
-    navController: NavController,
-    viewModel: UsuarioViewModel
+    viewModel: UsuarioViewModel,
+    onRegistrado: () -> Unit,
+    onIrAlLogin: () -> Unit
 ) {
     val estado by viewModel.estado.collectAsState()
+
+    val registroError by viewModel.registroError.collectAsState()
+
+    val registrando by viewModel.registrando.collectAsState()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -159,18 +167,41 @@ fun RegistroScreen(
             )
         }
 
-        // Botón: enviar
+
+        // Mostrar errores de registro
+        registroError?.let { mensaje ->
+            Text(
+                text = mensaje,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
+
+        // Botón para registrar un usuario
         Button(
             onClick = {
-                if (viewModel.validarFormulario()) {
-                    viewModel.guardar {
-                        navController.navigate("resumen")
-                    }
-                }
+                viewModel.guardar(
+                    onListo = onRegistrado
+                )
             },
+            enabled = !registrando,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Registrar")
+            Text(
+                if (registrando)
+                    "Registrando..."
+                else
+                    "Registrar"
+            )
         }
+
+        // Volver al inicio de sesión
+        TextButton(
+            onClick = onIrAlLogin,
+            enabled = !registrando,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("¿Ya tienes cuenta? Inicia sesión")
+        }
+
     }
 }

@@ -10,7 +10,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-
 import com.example.evaluacion.viewmodel.UsuarioViewModel
 
 @Composable
@@ -18,11 +17,12 @@ fun ResumenScreen(
     viewModel: UsuarioViewModel,
     onOpenQr: () -> Unit,
     onCrearSolicitud: () -> Unit,
-    onVerSolicitudes: () -> Unit
+    onVerSolicitudes: () -> Unit,
+    onCerrarSesion: () -> Unit
 ) {
 
-    // Obtener los datos del usuario
-    val estado by viewModel.estado.collectAsState()
+    // Datos del usuario que inició sesión
+    val usuario by viewModel.usuarioAutenticado.collectAsState()
 
     Column(
         modifier = Modifier
@@ -33,29 +33,34 @@ fun ResumenScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
 
-        // Título
         Text(
-            text = "Resumen del Registro",
+            text = "Resumen del Usuario",
             style = MaterialTheme.typography.headlineMedium
         )
 
-        // Información del usuario
-        Text("Nombre: ${estado.nombre}")
-        Text("Correo: ${estado.correo}")
-        Text("Dirección: ${estado.direccion}")
+        // Si no existe una sesión activa
+        if (usuario == null) {
 
-        Text(
-            "Registro de demostración: sin contraseña almacenada"
-        )
+            Text("No has iniciado sesión")
 
-        Text(
-            "Términos: ${
-                if (estado.aceptaTerminos)
-                    "Aceptados"
-                else
-                    "No aceptados"
-            }"
-        )
+            Button(
+                onClick = onCerrarSesion,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Ir al inicio de sesión")
+            }
+
+            return@Column
+        }
+
+        // Información del usuario autenticado
+        Text("Nombre: ${usuario?.nombre.orEmpty()}")
+
+        Text("Correo: ${usuario?.correo.orEmpty()}")
+
+        Text("Dirección: ${usuario?.direccion.orEmpty()}")
+
+        Text("Sesión iniciada correctamente")
 
         HorizontalDivider()
 
@@ -64,7 +69,7 @@ fun ResumenScreen(
             style = MaterialTheme.typography.titleMedium
         )
 
-        // Abrir lector QR
+        // Lector QR
         Button(
             onClick = onOpenQr,
             modifier = Modifier.fillMaxWidth()
@@ -80,12 +85,22 @@ fun ResumenScreen(
             Text("Crear nueva solicitud")
         }
 
-        // Consultar solicitudes guardadas
+        // Consultar solicitudes
         Button(
             onClick = onVerSolicitudes,
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Ver solicitudes")
+        }
+
+        HorizontalDivider()
+
+        // Cerrar sesión
+        OutlinedButton(
+            onClick = onCerrarSesion,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Cerrar sesión")
         }
     }
 }

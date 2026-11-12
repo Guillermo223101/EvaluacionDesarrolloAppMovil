@@ -23,6 +23,8 @@ import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.example.evaluacion.ui.screen.EditarSolicitudScreen
 
+import com.example.evaluacion.ui.screen.LoginScreen
+
 @Composable
 fun AppNavigation(
     qrViewModel: QrViewModel,
@@ -44,20 +46,58 @@ fun AppNavigation(
 
     NavHost(
         navController = navController,
-        startDestination = "registro",
+        startDestination = "login",
         modifier = Modifier.safeDrawingPadding()
     ) {
+        // Pantalla de inicio de sesión
+        composable("login") {
 
-        // Pantalla de registro
-        composable("registro") {
-            RegistroScreen(
-                navController = navController,
-                viewModel = usuarioViewModel
+            LoginScreen(
+                viewModel = usuarioViewModel,
+
+                onLoginExitoso = {
+
+                    navController.navigate("resumen") {
+                        popUpTo("login") {
+                            inclusive = true
+                        }
+                        launchSingleTop = true
+                    }
+                },
+
+                onIrRegistro = {
+                    navController.navigate("registro")
+                }
             )
         }
 
-        // Pantalla de resumen
+        // Pantalla de registro
+        composable("registro") {
+
+            RegistroScreen(
+                viewModel = usuarioViewModel,
+
+                onRegistrado = {
+
+                    // Volver al login después del registro
+                    navController.navigate("login") {
+                        popUpTo("login") {
+                            inclusive = false
+                        }
+                        launchSingleTop = true
+                    }
+                },
+
+                onIrAlLogin = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+
+        // Pantalla principal del usuario autenticado
         composable("resumen") {
+
             ResumenScreen(
                 viewModel = usuarioViewModel,
 
@@ -71,9 +111,24 @@ fun AppNavigation(
 
                 onVerSolicitudes = {
                     navController.navigate("lista_solicitudes")
+                },
+
+                onCerrarSesion = {
+
+                    // Limpiar la sesión activa
+                    usuarioViewModel.cerrarSesion()
+
+                    // Regresar al login
+                    navController.navigate("login") {
+                        popUpTo("resumen") {
+                            inclusive = true
+                        }
+                        launchSingleTop = true
+                    }
                 }
             )
         }
+
 
         // Lector QR
         composable("qr") {

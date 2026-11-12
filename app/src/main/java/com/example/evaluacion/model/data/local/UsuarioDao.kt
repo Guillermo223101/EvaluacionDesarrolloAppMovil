@@ -12,4 +12,17 @@ interface UsuarioDao {
 
     @Query("SELECT * FROM usuarios ORDER BY id DESC LIMIT 1")
     fun obtenerUltimo(): Flow<UsuarioEntity?>
+
+    @Query(
+        """
+            SELECT * FROM usuarios
+            WHERE LOWER(TRIM(correo)) = LOWER(TRIM(:correo))
+            ORDER BY id DESC
+            LIMIT 1
+        """
+    )
+
+    suspend fun  obtenerPorCorreo(
+        correo: String
+    ): UsuarioEntity?
 }
