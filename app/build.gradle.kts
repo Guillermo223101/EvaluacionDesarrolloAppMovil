@@ -64,7 +64,6 @@ dependencies {
 
     // CameraX
     val camerax_version = "1.4.2"
-
     implementation("androidx.camera:camera-core:$camerax_version")
     implementation("androidx.camera:camera-camera2:$camerax_version")
     implementation("androidx.camera:camera-lifecycle:$camerax_version")
@@ -77,8 +76,14 @@ dependencies {
     // ML Kit Barcode Scanning
     implementation("com.google.mlkit:barcode-scanning:17.3.0")
 
-
+    // Iconos
     implementation("androidx.compose.material:material-icons-core")
+
+    //Retrofit - Conexion con nuestra API REST
+    implementation("com.squareup.retrofit2:retrofit:3.0.0")
+
+    // Convertir JSON a objetos Kotlin y viceversa
+    implementation("com.squareup.retrofit2:converter-gson:3.0.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
