@@ -10,6 +10,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.evaluacion.viewmodel.EstadoSolicitudesRemotas
 import com.example.evaluacion.viewmodel.UsuarioViewModel
 
 @Composable
@@ -18,6 +19,7 @@ fun ResumenScreen(
     onOpenQr: () -> Unit,
     onCrearSolicitud: () -> Unit,
     onVerSolicitudes: () -> Unit,
+    onVerSolicitudesRemotas: () -> Unit,
     onCerrarSesion: () -> Unit
 ) {
 
@@ -92,6 +94,15 @@ fun ResumenScreen(
         ) {
             Text("Ver solicitudes")
         }
+
+        // Consultar solicitudes desde MongoDB
+        Button(
+            onClick = onVerSolicitudesRemotas,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Ver solicitudes en MongoDB")
+        }
+
 
         HorizontalDivider()
 

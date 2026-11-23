@@ -25,6 +25,9 @@ import com.example.evaluacion.ui.screen.EditarSolicitudScreen
 
 import com.example.evaluacion.ui.screen.LoginScreen
 
+import com.example.evaluacion.ui.screen.SolicitudesRemotasScreen
+import com.example.evaluacion.viewmodel.SolicitudRemotaViewModel
+
 @Composable
 fun AppNavigation(
     qrViewModel: QrViewModel,
@@ -113,6 +116,10 @@ fun AppNavigation(
                     navController.navigate("lista_solicitudes")
                 },
 
+                onVerSolicitudesRemotas = {
+                    navController.navigate("solicitudes_remotas")
+                },
+
                 onCerrarSesion = {
 
                     // Limpiar la sesión activa
@@ -194,5 +201,16 @@ fun AppNavigation(
                 }
             )
         }
+
+        // Pantalla de solicitudes almacenadas en MongoDB
+        composable("solicitudes_remotas") {
+
+            val remotoViewModel: SolicitudRemotaViewModel = viewModel()
+
+            SolicitudesRemotasScreen(
+                viewModel = remotoViewModel
+            )
+        }
+
     }
 }
