@@ -10,8 +10,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.evaluacion.viewmodel.EstadoSolicitudesRemotas
 import com.example.evaluacion.viewmodel.UsuarioViewModel
+
+import com.example.evaluacion.model.RolUsuario
 
 @Composable
 fun ResumenScreen(
@@ -57,11 +58,9 @@ fun ResumenScreen(
 
         // Información del usuario autenticado
         Text("Nombre: ${usuario?.nombre.orEmpty()}")
-
         Text("Correo: ${usuario?.correo.orEmpty()}")
-
         Text("Dirección: ${usuario?.direccion.orEmpty()}")
-
+        Text("Perfil: ${usuario?.rol?.name ?: "Sin perfil"}")
         Text("Sesión iniciada correctamente")
 
         HorizontalDivider()
@@ -70,39 +69,65 @@ fun ResumenScreen(
             text = "Funciones de la aplicación",
             style = MaterialTheme.typography.titleMedium
         )
+        when (usuario?.rol){
+            RolUsuario.CLIENTE -> {
+                Text("Funciones del cliente")
 
-        // Lector QR
-        Button(
-            onClick = onOpenQr,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Abrir lector QR")
+                // Lector QR
+                Button(
+                    onClick = onOpenQr,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Abrir lector QR")
+                }
+
+                // Crear solicitud
+                Button(
+                    onClick = onCrearSolicitud,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Crear nueva solicitud")
+                }
+
+                // Consultar solicitudes locales
+                Button(
+                    onClick = onVerSolicitudes,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Mis solicitudes")
+                }
+            }
+
+            RolUsuario.ADMIN -> {
+                Text("Funciones del Administrador")
+
+                // Consultar solicitudes desde MongoDB
+                Button(
+                    onClick = onVerSolicitudesRemotas,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Supervisar solicitudes")
+                }
+
+                Text(
+                    "Asignacion de tecnicos y prioridades: " +
+                            "pendiente de implementacion."
+                )
+            }
+
+            RolUsuario.TECNICO -> {
+                Text("Funciones del Tecnico")
+
+                Text(
+                    "Proximamente podras consultar tus" +
+                            "solicitudes asignadas y actualizar avances"
+                )
+            }
+
+            null -> {
+                Text("No hay un perfil activado")
+            }
         }
-
-        // Crear solicitud
-        Button(
-            onClick = onCrearSolicitud,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Crear nueva solicitud")
-        }
-
-        // Consultar solicitudes
-        Button(
-            onClick = onVerSolicitudes,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Ver solicitudes")
-        }
-
-        // Consultar solicitudes desde MongoDB
-        Button(
-            onClick = onVerSolicitudesRemotas,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Ver solicitudes en MongoDB")
-        }
-
 
         HorizontalDivider()
 

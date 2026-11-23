@@ -17,6 +17,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+import com.example.evaluacion.model.RolUsuario
+
 data class LoginUiState(
     val correo: String = "",
     val clave: String = "",
@@ -28,7 +30,8 @@ data class UsuarioSesion(
     val id: Long,
     val nombre: String,
     val correo: String,
-    val direccion: String
+    val direccion: String,
+    val rol: RolUsuario
 )
 class UsuarioViewModel(app: Application): AndroidViewModel(app) {
     private val dao = UsuarioDatabase.getDatabase(app).usuarioDao()
@@ -302,7 +305,10 @@ class UsuarioViewModel(app: Application): AndroidViewModel(app) {
                     id = usuario.id,
                     nombre = usuario.nombre,
                     correo = usuario.correo,
-                    direccion = usuario.direccion
+                    direccion = usuario.direccion,
+                    rol = RolUsuario.entries.firstOrNull {
+                        it.name == usuario.rol
+                    } ?: RolUsuario.CLIENTE
                 )
 
                 // Limpiar contraseña temporal
