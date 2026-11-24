@@ -108,11 +108,6 @@ fun ResumenScreen(
                 ) {
                     Text("Supervisar solicitudes")
                 }
-
-                Text(
-                    "Asignacion de tecnicos y prioridades: " +
-                            "pendiente de implementacion."
-                )
             }
 
             RolUsuario.TECNICO -> {

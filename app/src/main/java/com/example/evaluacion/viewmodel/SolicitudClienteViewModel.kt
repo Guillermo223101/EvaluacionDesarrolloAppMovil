@@ -7,6 +7,7 @@ import com.example.evaluacion.model.data.remote.DatosNuevaSolicitud
 import com.example.evaluacion.model.data.remote.RetrofitClient
 import com.example.evaluacion.model.data.remote.SesionApi
 import com.example.evaluacion.model.data.remote.SolicitudRemota
+import com.example.evaluacion.model.data.remote.DatosEditarSolicitud
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -159,4 +160,132 @@ class SolicitudClienteViewModel : ViewModel(){
             else -> "No fue posible conectar con el servidor"
         }
     }
+
+
+    fun actualizarSolicitud(
+        identificadorSolicitud: String,
+        titulo: String,
+        descripcion: String,
+        alCompletar: () -> Unit
+    ) {
+        if (_estado.value.guardando) return
+
+        if (titulo.isBlank() || descripcion.isBlank() ||
+            titulo.length > 100 || descripcion.length > 1000) {
+            _estado.update {
+                it.copy(mensajeError = "Revisa el titulo y la descripcion")
+            }
+            return
+        }
+
+        val autorizacion = obtenerAutorizacion()
+
+        if (autorizacion == null) {
+            _estado.update {
+                it.copy(mensajeError = "Debes iniciar sesion")
+            }
+            return
+        }
+
+        viewModelScope.launch {
+            _estado.update {
+                it.copy(guardando = true, mensajeError = null)
+            }
+
+            try {
+                val actualizada =
+                    RetrofitClient.solicitudesCliente.actualizarPropia(
+                        autorizacion,
+                        identificadorSolicitud,
+                        DatosEditarSolicitud(
+                            titulo.trim(),
+                            descripcion.trim()
+                        )
+                    )
+
+                _estado.update { estadoActual ->
+                    estadoActual.copy(
+                        solicitudes = estadoActual.solicitudes.map {
+                            if (it.id == identificadorSolicitud)
+                                actualizada
+                            else it
+                        }
+                    )
+                }
+
+                alCompletar()
+
+            } catch (error: CancellationException) {
+                throw error
+
+            } catch (error: Exception) {
+                _estado.update {
+                    it.copy(mensajeError = describirError(error))
+                }
+
+            } finally {
+                _estado.update {
+                    it.copy(guardando = false)
+                }
+            }
+        }
+    }
+
+    fun eliminarSolicitud(
+        identificadorSolicitud: String,
+        alCompletar: () -> Unit
+    ) {
+        if (_estado.value.guardando) return
+
+        val autorizacion = obtenerAutorizacion()
+
+        if (autorizacion == null) {
+            _estado.update {
+                it.copy(mensajeError = "Debes iniciar sesion")
+            }
+            return
+        }
+
+        viewModelScope.launch {
+            _estado.update {
+                it.copy(guardando = true, mensajeError = null)
+            }
+
+            try {
+                val respuesta =
+                    RetrofitClient.solicitudesCliente.eliminarPropia(
+                        autorizacion,
+                        identificadorSolicitud
+                    )
+
+                if (!respuesta.isSuccessful) {
+                    throw HttpException(respuesta)
+                }
+
+                _estado.update { estadoActual ->
+                    estadoActual.copy(
+                        solicitudes = estadoActual.solicitudes.filterNot {
+                            it.id == identificadorSolicitud
+                        }
+                    )
+                }
+
+                alCompletar()
+
+            } catch (error: CancellationException) {
+                throw error
+
+            } catch (error: Exception) {
+                _estado.update {
+                    it.copy(mensajeError = describirError(error))
+                }
+
+            } finally {
+                _estado.update {
+                    it.copy(guardando = false)
+                }
+            }
+        }
+    }
+
 }

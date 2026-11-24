@@ -28,4 +28,9 @@ object RetrofitClient {
     val solicitudesCliente: SolicitudClienteApiService by lazy {
         retrofit.create(SolicitudClienteApiService::class.java)
     }
+
+    // Servicio para operaciones administrativas protegidas
+    val solicitudesAdmin: SolicitudAdminApiService by lazy {
+        retrofit.create(SolicitudAdminApiService::class.java)
+    }
 }

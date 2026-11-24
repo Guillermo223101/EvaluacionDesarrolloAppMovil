@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 import com.example.evaluacion.viewmodel.SolicitudClienteViewModel
+import com.example.evaluacion.model.data.remote.SolicitudRemota
 
 @Composable
 fun SolicitudesClienteScreen(viewModel: SolicitudClienteViewModel) {
@@ -17,8 +18,11 @@ fun SolicitudesClienteScreen(viewModel: SolicitudClienteViewModel) {
     val estado by viewModel.estado.collectAsState()
 
     var titulo by rememberSaveable {mutableStateOf("")}
-
     var descripcion by rememberSaveable {mutableStateOf("")}
+    var solicitudParaEditar by remember { mutableStateOf<SolicitudRemota?>(null) }
+    var solicitudParaEliminar by remember { mutableStateOf<SolicitudRemota?>(null) }
+    var tituloEditado by remember { mutableStateOf("") }
+    var descripcionEditada by remember { mutableStateOf("") }
 
     LaunchedEffect(viewModel) {viewModel.consultarSolicitudes()}
 
@@ -116,9 +120,166 @@ fun SolicitudesClienteScreen(viewModel: SolicitudClienteViewModel) {
                         Text("Estado: ${solicitud.estado}")
 
                         Text("Prioridad: ${solicitud.prioridad}")
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            OutlinedButton(
+                                onClick = {
+                                    solicitudParaEditar = solicitud
+                                    tituloEditado = solicitud.titulo
+                                    descripcionEditada = solicitud.descripcion
+                                },
+                                enabled = solicitud.id != null && !estado.guardando,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Editar")
+                            }
+
+                            OutlinedButton(
+                                onClick = {
+                                    solicitudParaEliminar = solicitud
+                                },
+                                enabled = solicitud.id != null && !estado.guardando,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Eliminar")
+                            }
+                        }
+
                     }
                 }
             }
         }
+    }
+
+    solicitudParaEditar?.let { solicitud ->
+
+        AlertDialog(
+            onDismissRequest = {
+                if (!estado.guardando) {
+                    solicitudParaEditar = null
+                }
+            },
+
+            title = {
+                Text("Editar solicitud")
+            },
+
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = tituloEditado,
+                        onValueChange = {
+                            tituloEditado = it
+                        },
+                        label = { Text("Titulo") }
+                    )
+
+                    OutlinedTextField(
+                        value = descripcionEditada,
+                        onValueChange = {
+                            descripcionEditada = it
+                        },
+                        label = { Text("Descripcion") }
+                    )
+
+                    estado.mensajeError?.let { mensaje ->
+                        Text(
+                            mensaje,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+            },
+
+            confirmButton = {
+                TextButton(
+                    enabled = !estado.guardando,
+                    onClick = {
+                        val identificadorSolicitud =
+                            solicitud.id ?: return@TextButton
+
+                        viewModel.actualizarSolicitud(
+                            identificadorSolicitud,
+                            tituloEditado,
+                            descripcionEditada
+                        ) {
+                            solicitudParaEditar = null
+                        }
+                    }
+                ) {
+                    Text("Guardar cambios")
+                }
+            },
+
+            dismissButton = {
+                TextButton(
+                    enabled = !estado.guardando,
+                    onClick = {
+                        solicitudParaEditar = null
+                    }
+                ) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+
+
+    solicitudParaEliminar?.let { solicitud ->
+
+        AlertDialog(
+            onDismissRequest = {
+                if (!estado.guardando) {
+                    solicitudParaEliminar = null
+                }
+            },
+
+            title = {
+                Text("Eliminar solicitud")
+            },
+
+            text = {
+                Text(
+                    "¿Eliminar '${solicitud.titulo}'? " +
+                            "Esta accion no se puede deshacer."
+                )
+            },
+
+            confirmButton = {
+                TextButton(
+                    enabled = !estado.guardando,
+                    onClick = {
+                        val identificadorSolicitud =
+                            solicitud.id ?: return@TextButton
+
+                        viewModel.eliminarSolicitud(
+                            identificadorSolicitud
+                        ) {
+                            solicitudParaEliminar = null
+                        }
+                    }
+                ) {
+                    Text("Si, eliminar")
+                }
+            },
+
+            dismissButton = {
+                TextButton(
+                    enabled = !estado.guardando,
+                    onClick = {
+                        solicitudParaEliminar = null
+                    }
+                ) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 }

@@ -1,3 +1,4 @@
+
 package com.example.evaluacion.ui.screen
 
 import androidx.compose.foundation.layout.*
@@ -8,129 +9,308 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
+import com.example.evaluacion.model.data.remote.SolicitudRemota
 import com.example.evaluacion.viewmodel.SolicitudRemotaViewModel
+import java.util.Locale
 
 @Composable
 fun SolicitudesRemotasScreen(
     viewModel: SolicitudRemotaViewModel
-){
+) {
 
-    // Observar el estado del ViewModel
     val estado by viewModel.estado.collectAsState()
 
-    // Consultar MongoDB al ingresar a la pantalla
+    // Solicitud seleccionada para cada operacion
+    var solicitudParaPrioridad by remember {mutableStateOf<SolicitudRemota?>(null)}
+    var solicitudParaTecnico by remember {mutableStateOf<SolicitudRemota?>(null)}
+    var prioridadNueva by remember {mutableStateOf("MEDIA")}
+    var correoTecnico by remember {mutableStateOf("")}
+    val prioridades = listOf("BAJA", "MEDIA", "ALTA")
+
     LaunchedEffect(viewModel) {
         viewModel.cargarSolicitudes()
     }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-
         Text(
-            text = "Solicitudes en MongoDB",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.primary
+            "Supervision de solicitudes",
+            style = MaterialTheme.typography.headlineSmall
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Actualizar manualmente la lista
         Button(
-            onClick = {
-                viewModel.cargarSolicitudes()
-            },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !estado.cargando
+            onClick = { viewModel.cargarSolicitudes() },
+            enabled = !estado.cargando && !estado.procesando,
+            modifier = Modifier.fillMaxWidth()
         ) {
             Text("Actualizar solicitudes")
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Mostrar indicador de carga
-        if (estado.cargando) {
-            CircularProgressIndicator()
-
-            Text("Consultando servidor...")
+        if (estado.cargando || estado.procesando) {
+            LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth()
+            )
         }
 
-        // Mostrar errores de conexión
         estado.error?.let { mensaje ->
             Text(
-                text = mensaje,
+                mensaje,
                 color = MaterialTheme.colorScheme.error
             )
         }
 
-        // Mostrar solicitudes obtenidas
-        if (!estado.cargando && estado.error == null) {
+        estado.mensajeExito?.let { mensaje ->
+            Text(mensaje)
+        }
 
-            if (estado.solicitudes.isEmpty()) {
+        Text("Solicitudes: ${estado.solicitudes.size}")
 
-                Text(
-                    text = "No hay solicitudes en MongoDB",
-                    style = MaterialTheme.typography.bodyLarge
-                )
+        if (!estado.cargando && estado.solicitudes.isEmpty()) {
+            Text("No hay solicitudes para supervisar")
+        }
 
-            } else {
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
 
-                Text(
-                    text = "Solicitudes encontradas: " +
-                            estado.solicitudes.size
-                )
+            items(estado.solicitudes) { solicitud ->
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                LazyColumn(
-                    verticalArrangement =
-                        Arrangement.spacedBy(12.dp)
+                Card(
+                    modifier = Modifier.fillMaxWidth()
                 ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement =
+                            Arrangement.spacedBy(6.dp)
+                    ) {
 
-                    items(estado.solicitudes) { solicitud ->
+                        Text(
+                            solicitud.titulo,
+                            style = MaterialTheme.typography.titleMedium
+                        )
 
-                        Card(
-                            modifier = Modifier.fillMaxWidth()
+                        Text(solicitud.descripcion)
+
+                        Text("Estado: ${solicitud.estado}")
+
+                        Text("Prioridad: ${solicitud.prioridad}")
+
+                        Text(
+                            "Cliente: " +
+                                    (solicitud.clienteCorreo?: "Sin propietario")
+                        )
+
+                        Text(
+                            "Tecnico: " +
+                                    (solicitud.tecnicoCorreo?: "Sin asignar")
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement =
+                                Arrangement.spacedBy(8.dp)
                         ) {
 
-                            Column(
-                                modifier = Modifier.padding(16.dp)
+                            OutlinedButton(
+                                modifier = Modifier.weight(1f),
+                                enabled = solicitud.id != null && !estado.procesando,
+                                onClick = {
+                                    solicitudParaPrioridad = solicitud
+
+                                    val prioridadActual =
+                                        solicitud.prioridad
+                                            .uppercase(Locale.ROOT)
+
+                                    prioridadNueva =
+                                        if (prioridadActual in prioridades)
+                                            prioridadActual
+                                        else
+                                            "MEDIA"
+                                }
                             ) {
+                                Text("Prioridad")
+                            }
 
-                                Text(
-                                    text = solicitud.titulo,
-                                    style = MaterialTheme
-                                        .typography.titleMedium
-                                )
-
-                                Spacer(
-                                    modifier = Modifier.height(8.dp)
-                                )
-
-                                Text(
-                                    text = solicitud.descripcion
-                                )
-
-                                Text(
-                                    text = "Estado: ${solicitud.estado}"
-                                )
-
-                                Text(
-                                    text = "Prioridad: ${solicitud.prioridad}"
-                                )
-
-                                Text(
-                                    text = "ID: ${solicitud.id ?: "Sin ID"}",
-                                    style = MaterialTheme
-                                        .typography.bodySmall
-                                )
+                            OutlinedButton(
+                                modifier = Modifier.weight(1f),
+                                enabled = solicitud.id != null &&
+                                        !estado.procesando,
+                                onClick = {
+                                    solicitudParaTecnico = solicitud
+                                    correoTecnico =
+                                        solicitud.tecnicoCorreo.orEmpty()
+                                }
+                            ) {
+                                Text("Asignar")
                             }
                         }
                     }
                 }
             }
         }
+    }
+
+    // Dialogo: cambiar prioridad
+    solicitudParaPrioridad?.let { solicitud ->
+
+        AlertDialog(
+            onDismissRequest = {
+                if (!estado.procesando) {
+                    solicitudParaPrioridad = null
+                }
+            },
+
+            title = {
+                Text("Cambiar prioridad")
+            },
+
+            text = {
+                Column(
+                    verticalArrangement =
+                        Arrangement.spacedBy(8.dp)
+                ) {
+
+                    Text(solicitud.titulo)
+
+                    prioridades.forEach { prioridad ->
+
+                        Row {
+                            RadioButton(
+                                selected = prioridadNueva == prioridad,
+                                onClick = {
+                                    prioridadNueva = prioridad
+                                },
+                                enabled = !estado.procesando
+                            )
+
+                            TextButton(
+                                onClick = {
+                                    prioridadNueva = prioridad
+                                },
+                                enabled = !estado.procesando
+                            ) {
+                                Text(prioridad)
+                            }
+                        }
+                    }
+
+                    estado.error?.let { mensaje ->
+                        Text(
+                            mensaje,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+            },
+
+            confirmButton = {
+                TextButton(
+                    enabled = !estado.procesando,
+                    onClick = {
+                        val identificadorSolicitud =
+                            solicitud.id ?: return@TextButton
+
+                        viewModel.cambiarPrioridad(
+                            identificadorSolicitud,
+                            prioridadNueva
+                        ) {
+                            solicitudParaPrioridad = null
+                        }
+                    }
+                ) {
+                    Text("Guardar")
+                }
+            },
+
+            dismissButton = {
+                TextButton(
+                    enabled = !estado.procesando,
+                    onClick = {
+                        solicitudParaPrioridad = null
+                    }
+                ) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+
+    // Dialogo: asignar tecnico
+    solicitudParaTecnico?.let { solicitud ->
+
+        AlertDialog(
+            onDismissRequest = {
+                if (!estado.procesando) {
+                    solicitudParaTecnico = null
+                }
+            },
+
+            title = {
+                Text("Asignar tecnico")
+            },
+
+            text = {
+                Column(
+                    verticalArrangement =
+                        Arrangement.spacedBy(8.dp)
+                ) {
+
+                    Text(solicitud.titulo)
+
+                    OutlinedTextField(
+                        value = correoTecnico,
+                        onValueChange = {
+                            correoTecnico = it
+                        },
+                        label = {
+                            Text("Correo del tecnico")
+                        },
+                        singleLine = true
+                    )
+
+                    estado.error?.let { mensaje ->
+                        Text(
+                            mensaje,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+            },
+
+            confirmButton = {
+                TextButton(
+                    enabled = !estado.procesando &&
+                            correoTecnico.isNotBlank(),
+                    onClick = {
+                        val identificadorSolicitud =
+                            solicitud.id ?: return@TextButton
+
+                        viewModel.asignarTecnico(
+                            identificadorSolicitud,
+                            correoTecnico
+                        ) {
+                            solicitudParaTecnico = null
+                        }
+                    }
+                ) {
+                    Text("Asignar")
+                }
+            },
+
+            dismissButton = {
+                TextButton(
+                    enabled = !estado.procesando,
+                    onClick = {
+                        solicitudParaTecnico = null
+                    }
+                ) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 }
