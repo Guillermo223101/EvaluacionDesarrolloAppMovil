@@ -3,21 +3,28 @@ package com.example.evaluacion.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+
 import com.example.evaluacion.model.UsuarioErrores
 import com.example.evaluacion.model.UsuarioUiState
 import com.example.evaluacion.model.data.local.UsuarioDatabase
 import com.example.evaluacion.model.data.local.UsuarioEntity
+import com.example.evaluacion.utils.PasswordHash
+import com.example.evaluacion.model.RolUsuario
+import com.example.evaluacion.model.data.remote.LoginRemotoRequest
+import com.example.evaluacion.model.data.remote.RetrofitClient
+import com.example.evaluacion.model.data.remote.SesionApi
+
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
-import com.example.evaluacion.utils.PasswordHash
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-import com.example.evaluacion.model.RolUsuario
+import retrofit2.HttpException
+
+import java.io.IOException
 
 data class LoginUiState(
     val correo: String = "",
@@ -31,7 +38,8 @@ data class UsuarioSesion(
     val nombre: String,
     val correo: String,
     val direccion: String,
-    val rol: RolUsuario
+    val rol: RolUsuario,
+    val idRemoto: String? = null
 )
 class UsuarioViewModel(app: Application): AndroidViewModel(app) {
     private val dao = UsuarioDatabase.getDatabase(app).usuarioDao()
@@ -339,12 +347,97 @@ class UsuarioViewModel(app: Application): AndroidViewModel(app) {
             }
         }
     }
+
+    fun iniciarSesionRemota(onExito: () -> Unit) {
+
+        if (_login.value.procesando) return
+
+        val datos = _login.value
+
+        if (datos.correo.isBlank() || datos.clave.isBlank()) {
+            _login.update {
+                it.copy(error = "Ingresa correo y contraseña")
+            }
+            return
+        }
+
+        _login.update {
+            it.copy(procesando = true, error = null)
+        }
+
+        viewModelScope.launch {
+            try {
+                val respuesta = RetrofitClient.usuarios.iniciarSesion(
+                    LoginRemotoRequest(
+                        correo = datos.correo.trim().lowercase(),
+                        clave = datos.clave
+                    )
+                )
+
+                val rol = RolUsuario.entries.firstOrNull {
+                    it.name == respuesta.usuario.rol
+                } ?: error("Rol de usuario no reconocido")
+
+                val usuario = respuesta.usuario
+
+                // Guardar token solamente si el login fue valido
+                SesionApi.guardarToken(respuesta.token)
+
+                _usuarioAutenticado.value = UsuarioSesion(
+                    id = -1L,
+                    nombre = usuario.nombre,
+                    correo = usuario.correo,
+                    direccion = usuario.direccion.orEmpty(),
+                    rol = rol,
+                    idRemoto = usuario.id
+                )
+
+                _login.update {
+                    it.copy(clave = "", error = null)
+                }
+
+                onExito()
+
+            } catch (e: CancellationException) {
+                throw e
+
+            } catch (e: HttpException) {
+                _login.update {
+                    it.copy(
+                        error = when (e.code()) {
+                            401 -> "Correo o contraseña incorrectos"
+                            else -> "Error del servidor: ${e.code()}"
+                        }
+                    )
+                }
+
+            } catch (e: IOException) {
+                _login.update {
+                    it.copy(
+                        error = "No se pudo conectar con Spring Boot"
+                    )
+                }
+
+            } catch (e: Exception) {
+                _login.update {
+                    it.copy(error = "No se pudo iniciar sesión remota")
+                }
+
+            } finally {
+                _login.update {
+                    it.copy(procesando = false)
+                }
+            }
+        }
+    }
+
     // CERRAR SESIÓN
     fun cerrarSesion() {
         _usuarioAutenticado.value = null
         _login.value = LoginUiState()
         _estado.value = UsuarioUiState()
         _registroError.value = null
+        SesionApi.cerrarSesion()
     }
 }
 

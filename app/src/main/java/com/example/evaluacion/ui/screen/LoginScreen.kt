@@ -139,6 +139,20 @@ fun LoginScreen(
             }
         }
 
+        Spacer(modifier = Modifier.height(12.dp))
+
+        OutlinedButton(
+            onClick = {
+                viewModel.iniciarSesionRemota(
+                    onExito = onLoginExitoso
+                )
+            },
+            enabled = !estado.procesando,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Iniciar sesión con MongoDB")
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
 
         // BOTÓN PARA IR AL REGISTRO

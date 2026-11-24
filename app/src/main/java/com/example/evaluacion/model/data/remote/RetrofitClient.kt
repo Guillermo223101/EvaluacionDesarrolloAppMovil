@@ -18,4 +18,14 @@ object RetrofitClient {
     val api: SolicitudApiService by lazy {
         retrofit.create(SolicitudApiService::class.java)
     }
+
+    // Servicio para autenticacion remota
+    val usuarios: UsuarioApiService by lazy {
+        retrofit.create(UsuarioApiService::class.java)
+    }
+
+    //Servicio de solicitudes protegidas por JWT
+    val solicitudesCliente: SolicitudClienteApiService by lazy {
+        retrofit.create(SolicitudClienteApiService::class.java)
+    }
 }

@@ -7,6 +7,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 
 import com.example.evaluacion.ui.screen.RegistroScreen
 import com.example.evaluacion.ui.screen.ResumenScreen
@@ -16,17 +18,15 @@ import com.example.evaluacion.ui.view.QrScannerScreen
 import com.example.evaluacion.ui.viewmodel.QrViewModel
 import com.example.evaluacion.viewmodel.UsuarioViewModel
 import com.example.evaluacion.viewmodel.SolicitudViewModel
-
-import com.example.integraciones.recordarNotificadorNuevaSolicitud
-
-import androidx.navigation.NavType
-import androidx.navigation.navArgument
 import com.example.evaluacion.ui.screen.EditarSolicitudScreen
-
-import com.example.evaluacion.ui.screen.LoginScreen
-
 import com.example.evaluacion.ui.screen.SolicitudesRemotasScreen
 import com.example.evaluacion.viewmodel.SolicitudRemotaViewModel
+import com.example.evaluacion.ui.screen.LoginScreen
+import com.example.evaluacion.ui.screen.SolicitudesClienteScreen
+import com.example.evaluacion.viewmodel.SolicitudClienteViewModel
+
+
+import com.example.integraciones.recordarNotificadorNuevaSolicitud
 
 @Composable
 fun AppNavigation(
@@ -109,11 +109,23 @@ fun AppNavigation(
                 },
 
                 onCrearSolicitud = {
-                    navController.navigate("crear_solicitud")
+                    val esRemoto =
+                        usuarioViewModel.usuarioAutenticado.value?.idRemoto != null
+
+                    navController.navigate(
+                        if (esRemoto)"solicitudes_cliente"
+                                else "crear_solicitud"
+                    )
                 },
 
                 onVerSolicitudes = {
-                    navController.navigate("lista_solicitudes")
+                    val esRemoto =
+                        usuarioViewModel.usuarioAutenticado.value?.idRemoto != null
+
+                    navController.navigate(
+                        if (esRemoto) "solicitudes_cliente"
+                            else "lista_solicitudes"
+                    )
                 },
 
                 onVerSolicitudesRemotas = {
@@ -209,6 +221,16 @@ fun AppNavigation(
 
             SolicitudesRemotasScreen(
                 viewModel = remotoViewModel
+            )
+        }
+
+
+        composable("solicitudes_cliente") {
+
+            val vistaModeloCliente: SolicitudClienteViewModel = viewModel()
+
+            SolicitudesClienteScreen(
+                viewModel = vistaModeloCliente
             )
         }
 
