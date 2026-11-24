@@ -21,6 +21,7 @@ fun ResumenScreen(
     onCrearSolicitud: () -> Unit,
     onVerSolicitudes: () -> Unit,
     onVerSolicitudesRemotas: () -> Unit,
+    onVerSolicitudesTecnico: () -> Unit,
     onCerrarSesion: () -> Unit
 ) {
 
@@ -113,11 +114,21 @@ fun ResumenScreen(
             RolUsuario.TECNICO -> {
                 Text("Funciones del Tecnico")
 
-                Text(
-                    "Proximamente podras consultar tus" +
-                            "solicitudes asignadas y actualizar avances"
-                )
+                if (usuario?.idRemoto != null) {
+                    Button(
+                        onClick = onVerSolicitudesTecnico,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Mis solicitudes asignadas")
+                    }
+                } else {
+                    Text(
+                        "Para consultar asignaciones debes " +
+                                "iniciar sesion con MongoDB."
+                    )
+                }
             }
+
 
             null -> {
                 Text("No hay un perfil activado")

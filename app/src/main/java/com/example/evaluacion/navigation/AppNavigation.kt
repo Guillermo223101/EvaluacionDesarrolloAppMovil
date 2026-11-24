@@ -24,7 +24,8 @@ import com.example.evaluacion.viewmodel.SolicitudRemotaViewModel
 import com.example.evaluacion.ui.screen.LoginScreen
 import com.example.evaluacion.ui.screen.SolicitudesClienteScreen
 import com.example.evaluacion.viewmodel.SolicitudClienteViewModel
-
+import com.example.evaluacion.ui.screen.SolicitudesTecnicoScreen
+import com.example.evaluacion.viewmodel.SolicitudTecnicoViewModel
 
 import com.example.integraciones.recordarNotificadorNuevaSolicitud
 
@@ -132,6 +133,10 @@ fun AppNavigation(
                     navController.navigate("solicitudes_remotas")
                 },
 
+                onVerSolicitudesTecnico = {
+                    navController.navigate("solicitudes_tecnico")
+                },
+
                 onCerrarSesion = {
 
                     // Limpiar la sesión activa
@@ -233,6 +238,16 @@ fun AppNavigation(
                 viewModel = vistaModeloCliente
             )
         }
+
+        composable("solicitudes_tecnico") {
+
+            val vistaModeloTecnico: SolicitudTecnicoViewModel = viewModel()
+
+            SolicitudesTecnicoScreen(
+                viewModel = vistaModeloTecnico
+            )
+        }
+
 
     }
 }
