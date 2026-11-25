@@ -7,6 +7,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 
 import com.example.evaluacion.model.data.remote.SolicitudRemota
 import com.example.evaluacion.viewmodel.SolicitudTecnicoViewModel
@@ -19,9 +21,9 @@ fun SolicitudesTecnicoScreen(
 
     val estado by viewModel.estado.collectAsState()
 
-    var solicitudParaResolver by remember {
-        mutableStateOf<SolicitudRemota?>(null)
-    }
+    var solicitudParaResolver by remember { mutableStateOf<SolicitudRemota?>(null) }
+    var solicitudParaAvances by remember { mutableStateOf<SolicitudRemota?>(null) }
+    var comentarioNuevo by remember { mutableStateOf("") }
 
     LaunchedEffect(viewModel) {
         viewModel.cargarSolicitudes()
@@ -166,6 +168,24 @@ fun SolicitudesTecnicoScreen(
                                 Text("Estado pendiente de revision")
                             }
                         }
+
+                        OutlinedButton(
+                            onClick = {
+                                val identificadorSolicitud =
+                                    solicitud.id ?: return@OutlinedButton
+
+                                solicitudParaAvances = solicitud
+                                comentarioNuevo = ""
+
+                                viewModel.consultarAvances(identificadorSolicitud)
+                            },
+                            enabled = solicitud.id != null &&
+                                    !estado.guardandoAvance,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Ver / registrar avances")
+                        }
+
                     }
                 }
             }
@@ -231,6 +251,143 @@ fun SolicitudesTecnicoScreen(
                     }
                 ) {
                     Text("Cancelar")
+                }
+            }
+        )
+    }
+
+    // Dialogo para consultar y registrar avances
+    solicitudParaAvances?.let { solicitud ->
+
+        AlertDialog(
+            onDismissRequest = {
+                if (!estado.guardandoAvance) {
+                    solicitudParaAvances = null
+                }
+            },
+
+            title = {
+                Text("Avances del técnico")
+            },
+
+            text = {
+                Column(
+                    modifier = Modifier
+                        .heightIn(max = 420.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+
+                    Text(
+                        solicitud.titulo,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+
+                    HorizontalDivider()
+
+                    Text("Historial de avances")
+
+                    if (estado.cargandoAvances) {
+                        CircularProgressIndicator()
+                    } else if (estado.avances.isEmpty() &&
+                        estado.errorAvances == null) {
+
+                        Text("Todavía no hay avances registrados")
+                    }
+
+                    estado.avances.forEach { avance ->
+
+                        Card(
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(12.dp),
+                                verticalArrangement =
+                                    Arrangement.spacedBy(4.dp)
+                            ) {
+                                Text(avance.comentario)
+
+                                Text(
+                                    "Técnico: ${avance.tecnicoCorreo}",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+
+                                Text(
+                                    "Fecha UTC: ${avance.fechaHora ?: "Sin fecha"}",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        }
+                    }
+
+                    HorizontalDivider()
+
+                    OutlinedTextField(
+                        value = comentarioNuevo,
+                        onValueChange = {
+                            if (it.length <= 1000) {
+                                comentarioNuevo = it
+                            }
+                        },
+                        label = { Text("Nuevo comentario") },
+                        placeholder = {
+                            Text("Describa el trabajo realizado")
+                        },
+                        minLines = 3,
+                        enabled = !estado.guardandoAvance,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Text("${comentarioNuevo.length}/1000 caracteres")
+
+                    estado.errorAvances?.let { mensaje ->
+                        Text(
+                            mensaje,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+
+                    estado.mensajeAvances?.let { mensaje ->
+                        Text(mensaje)
+                    }
+                }
+            },
+
+            confirmButton = {
+                TextButton(
+                    enabled = comentarioNuevo.isNotBlank() &&
+                            !estado.guardandoAvance &&
+                            !estado.cargandoAvances,
+
+                    onClick = {
+                        val identificadorSolicitud =
+                            solicitud.id ?: return@TextButton
+
+                        viewModel.registrarAvance(
+                            identificadorSolicitud,
+                            comentarioNuevo
+                        ) {
+                            comentarioNuevo = ""
+                        }
+                    }
+                ) {
+                    Text(
+                        if (estado.guardandoAvance)
+                            "Guardando..."
+                        else
+                            "Registrar avance"
+                    )
+                }
+            },
+
+            dismissButton = {
+                TextButton(
+                    enabled = !estado.guardandoAvance,
+                    onClick = {
+                        solicitudParaAvances = null
+                    }
+                ) {
+                    Text("Cerrar")
                 }
             }
         )
