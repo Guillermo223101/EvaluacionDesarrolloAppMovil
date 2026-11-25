@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.dp
 
 import com.example.evaluacion.viewmodel.SolicitudClienteViewModel
 import com.example.evaluacion.model.data.remote.SolicitudRemota
+import com.example.integraciones.recordarNotificadorNuevaSolicitud
 
 @Composable
 fun SolicitudesClienteScreen(viewModel: SolicitudClienteViewModel) {
@@ -25,6 +26,7 @@ fun SolicitudesClienteScreen(viewModel: SolicitudClienteViewModel) {
     var descripcionEditada by remember { mutableStateOf("") }
     var categoriaSeleccionada by remember { mutableStateOf("") }
     var categoriaEditada by remember { mutableStateOf("") }
+    val notificarSolicitud = recordarNotificadorNuevaSolicitud()
 
     LaunchedEffect(viewModel) {viewModel.consultarSolicitudes()}
 
@@ -68,7 +70,10 @@ fun SolicitudesClienteScreen(viewModel: SolicitudClienteViewModel) {
                     titulo,
                     descripcion,
                     categoriaSeleccionada
-                ) {
+                ) { codigo, tituloCreado ->
+
+                    notificarSolicitud(codigo, tituloCreado)
+
                     titulo = ""
                     descripcion = ""
                     categoriaSeleccionada = ""

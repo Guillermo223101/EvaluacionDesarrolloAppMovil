@@ -83,7 +83,7 @@ class SolicitudClienteViewModel : ViewModel(){
         titulo: String,
         descripcion: String,
         categoria: String,
-        alGuardar: () -> Unit
+        alGuardar: (String, String) -> Unit
     ) {
 
         if (_estado.value.guardando) return
@@ -127,6 +127,7 @@ class SolicitudClienteViewModel : ViewModel(){
             }
 
             try {
+                val soliciudCreada =
                 RetrofitClient.solicitudesCliente.crearPropia(
                     autorizacion,
                     DatosNuevaSolicitud(
@@ -136,14 +137,18 @@ class SolicitudClienteViewModel : ViewModel(){
                     )
                 )
 
+                //Notificar cuando Mongo confirme
+                alGuardar(
+                    soliciudCreada.id ?: "MongoDB",
+                    soliciudCreada.titulo
+                )
+
                 val solicitudes = RetrofitClient.solicitudesCliente
                     .consultarPropias(autorizacion)
 
                 _estado.update {
                     it.copy(solicitudes = solicitudes)
                 }
-
-                alGuardar()
 
             } catch (error: CancellationException) {
                 throw error
