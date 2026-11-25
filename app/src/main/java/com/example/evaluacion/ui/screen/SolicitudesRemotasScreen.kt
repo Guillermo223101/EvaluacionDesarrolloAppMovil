@@ -96,8 +96,12 @@ fun SolicitudesRemotasScreen(
                         Text(solicitud.descripcion)
 
                         Text("Estado: ${solicitud.estado}")
-
                         Text("Prioridad: ${solicitud.prioridad}")
+
+                        Text(
+                            "Categoría: " +
+                                    (solicitud.categoria ?: "Sin categoría"))
+
 
                         Text(
                             "Cliente: " +

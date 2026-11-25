@@ -82,6 +82,7 @@ class SolicitudClienteViewModel : ViewModel(){
     fun crearSolicitud(
         titulo: String,
         descripcion: String,
+        categoria: String,
         alGuardar: () -> Unit
     ) {
 
@@ -100,6 +101,15 @@ class SolicitudClienteViewModel : ViewModel(){
             }
             return
         }
+
+
+        if (categoria !in listOf("Hardware", "Software", "Redes")) {
+            _estado.update {
+                it.copy(mensajeError = "Selecciona una categoría válida")
+            }
+            return
+        }
+
 
         val autorizacion = obtenerAutorizacion()
 
@@ -121,7 +131,8 @@ class SolicitudClienteViewModel : ViewModel(){
                     autorizacion,
                     DatosNuevaSolicitud(
                         titulo = titulo.trim(),
-                        descripcion = descripcion.trim()
+                        descripcion = descripcion.trim(),
+                        categoria = categoria
                     )
                 )
 
@@ -166,6 +177,7 @@ class SolicitudClienteViewModel : ViewModel(){
         identificadorSolicitud: String,
         titulo: String,
         descripcion: String,
+        categoria: String?,
         alCompletar: () -> Unit
     ) {
         if (_estado.value.guardando) return
@@ -177,6 +189,16 @@ class SolicitudClienteViewModel : ViewModel(){
             }
             return
         }
+
+        if (categoria != null &&
+            categoria !in listOf("Hardware", "Software", "Redes")
+        ) {
+            _estado.update {
+                it.copy(mensajeError = "Selecciona una categoría válida")
+            }
+            return
+        }
+
 
         val autorizacion = obtenerAutorizacion()
 
@@ -199,7 +221,8 @@ class SolicitudClienteViewModel : ViewModel(){
                         identificadorSolicitud,
                         DatosEditarSolicitud(
                             titulo.trim(),
-                            descripcion.trim()
+                            descripcion.trim(),
+                            categoria = categoria
                         )
                     )
 

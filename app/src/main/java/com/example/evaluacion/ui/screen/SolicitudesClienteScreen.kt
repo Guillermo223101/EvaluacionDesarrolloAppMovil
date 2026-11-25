@@ -23,6 +23,8 @@ fun SolicitudesClienteScreen(viewModel: SolicitudClienteViewModel) {
     var solicitudParaEliminar by remember { mutableStateOf<SolicitudRemota?>(null) }
     var tituloEditado by remember { mutableStateOf("") }
     var descripcionEditada by remember { mutableStateOf("") }
+    var categoriaSeleccionada by remember { mutableStateOf("") }
+    var categoriaEditada by remember { mutableStateOf("") }
 
     LaunchedEffect(viewModel) {viewModel.consultarSolicitudes()}
 
@@ -53,14 +55,23 @@ fun SolicitudesClienteScreen(viewModel: SolicitudClienteViewModel) {
             minLines = 2
         )
 
+        Text("Categoría")
+        SelectorCategoria(
+            categoriaSeleccionada = categoriaSeleccionada,
+            habilitado = !estado.guardando,
+            alSeleccionar = { categoriaSeleccionada = it }
+        )
+
         Button(
             onClick = {
                 viewModel.crearSolicitud(
                     titulo,
-                    descripcion
+                    descripcion,
+                    categoriaSeleccionada
                 ) {
                     titulo = ""
                     descripcion = ""
+                    categoriaSeleccionada = ""
                 }
             },
             modifier = Modifier.fillMaxWidth(),
@@ -118,8 +129,10 @@ fun SolicitudesClienteScreen(viewModel: SolicitudClienteViewModel) {
                         Text(solicitud.descripcion)
 
                         Text("Estado: ${solicitud.estado}")
-
                         Text("Prioridad: ${solicitud.prioridad}")
+                        Text("Categoria: " +
+                                (solicitud.categoria ?: "Sin categoria"))
+
 
                         Spacer(modifier = Modifier.height(8.dp))
 
@@ -132,6 +145,7 @@ fun SolicitudesClienteScreen(viewModel: SolicitudClienteViewModel) {
                                     solicitudParaEditar = solicitud
                                     tituloEditado = solicitud.titulo
                                     descripcionEditada = solicitud.descripcion
+                                    categoriaEditada = solicitud.categoria.orEmpty()
                                 },
                                 enabled = solicitud.id != null && !estado.guardando,
                                 modifier = Modifier.weight(1f)
@@ -189,6 +203,12 @@ fun SolicitudesClienteScreen(viewModel: SolicitudClienteViewModel) {
                         label = { Text("Descripcion") }
                     )
 
+                    SelectorCategoria(
+                        categoriaSeleccionada = categoriaEditada,
+                        habilitado = !estado.guardando,
+                        alSeleccionar = { categoriaEditada = it }
+                    )
+
                     estado.mensajeError?.let { mensaje ->
                         Text(
                             mensaje,
@@ -208,7 +228,8 @@ fun SolicitudesClienteScreen(viewModel: SolicitudClienteViewModel) {
                         viewModel.actualizarSolicitud(
                             identificadorSolicitud,
                             tituloEditado,
-                            descripcionEditada
+                            descripcionEditada,
+                            categoriaEditada.ifBlank { null }
                         ) {
                             solicitudParaEditar = null
                         }
@@ -281,5 +302,47 @@ fun SolicitudesClienteScreen(viewModel: SolicitudClienteViewModel) {
                 }
             }
         )
+    }
+}
+
+
+@Composable
+private fun SelectorCategoria(
+    categoriaSeleccionada: String,
+    habilitado: Boolean = true,
+    alSeleccionar: (String) -> Unit
+) {
+    var menuAbierto by remember {mutableStateOf(false)}
+
+    val categorias = listOf("Hardware", "Software", "Redes")
+
+    Box(modifier = Modifier.fillMaxWidth()) {
+
+        OutlinedButton(
+            onClick = { menuAbierto = true },
+            enabled = habilitado,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                categoriaSeleccionada.ifBlank {
+                    "Seleccionar categoría"
+                }
+            )
+        }
+
+        DropdownMenu(
+            expanded = menuAbierto,
+            onDismissRequest = { menuAbierto = false }
+        ) {
+            categorias.forEach { categoria ->
+                DropdownMenuItem(
+                    text = { Text(categoria) },
+                    onClick = {
+                        alSeleccionar(categoria)
+                        menuAbierto = false
+                    }
+                )
+            }
+        }
     }
 }

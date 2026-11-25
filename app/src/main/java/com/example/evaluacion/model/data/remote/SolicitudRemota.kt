@@ -7,5 +7,6 @@ data class SolicitudRemota(
     val estado: String,
     val prioridad: String,
     val clienteCorreo: String? = null,
-    val tecnicoCorreo: String? = null
+    val tecnicoCorreo: String? = null,
+    val categoria: String? = null
 )
