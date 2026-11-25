@@ -42,8 +42,10 @@ data class UsuarioSesion(
     val rol: RolUsuario,
     val idRemoto: String? = null
 )
-class UsuarioViewModel(app: Application): AndroidViewModel(app) {
+
+class UsuarioViewModel(app: Application) : AndroidViewModel(app) {
     private val dao = UsuarioDatabase.getDatabase(app).usuarioDao()
+    private val emailRegex = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
 
     // Estado del registro
     private val _registroError = MutableStateFlow<String?>(null)
@@ -111,32 +113,44 @@ class UsuarioViewModel(app: Application): AndroidViewModel(app) {
     fun onAceptarTerminosChange(valor: Boolean) {
         _estado.update {
             it.copy(
-                    aceptaTerminos = valor,
-                    errores = it.errores.copy(terminos = null)
-                )
+                aceptaTerminos = valor,
+                errores = it.errores.copy(terminos = null)
+            )
         }
     }
 
     // Validación global del formulario
     fun validarFormulario(): Boolean {
         val estadoActual = _estado.value
+        val nombreLimpio = estadoActual.nombre.trim()
+        val correoLimpio = estadoActual.correo.trim()
+        val direccionLimpia = estadoActual.direccion.trim()
 
         val errores = UsuarioErrores(
-            nombre = if (estadoActual.nombre.isBlank())
-                "Campo obligatorio"
-            else null,
+            nombre = when {
+                nombreLimpio.isBlank() -> "Campo obligatorio"
+                nombreLimpio.length < 3 -> "Debe tener al menos 3 caracteres"
+                else -> null
+            },
 
-            correo = if (!estadoActual.correo.contains("@"))
-                "Correo inválido"
-            else null,
+            correo = when {
+                correoLimpio.isBlank() -> "Campo obligatorio"
+                !emailRegex.matches(correoLimpio) -> "Ingresa un correo válido (ej: usuario@dominio.cl)"
+                else -> null
+            },
 
-            clave = if (estadoActual.clave.length < 6)
-                "Debe tener al menos 6 caracteres"
-            else null,
+            clave = when {
+                estadoActual.clave.isBlank() -> "Campo obligatorio"
+                estadoActual.clave.length < 6 -> "Debe tener al menos 6 caracteres"
+                estadoActual.clave.any { it.isWhitespace() } -> "No puede contener espacios"
+                else -> null
+            },
 
-            direccion = if (estadoActual.direccion.isBlank())
-                "Campo obligatorio"
-            else null,
+            direccion = when {
+                direccionLimpia.isBlank() -> "Campo obligatorio"
+                direccionLimpia.length < 5 -> "Debe tener al menos 5 caracteres"
+                else -> null
+            },
 
             terminos = if (!estadoActual.aceptaTerminos)
                 "Debes aceptar los terminos y condiciones"
@@ -158,17 +172,17 @@ class UsuarioViewModel(app: Application): AndroidViewModel(app) {
         return !hayErrores
     }
 
-    //GUARDAR EN ROOM
+    // GUARDAR EN ROOM
     fun guardar(onListo: () -> Unit) {
-        //Evitar registros simultaneos
+        // Evitar registros simultaneos
         if (_registrando.value) return
-        //Validar formulario
+        // Validar formulario
         if (!validarFormulario()) return
 
         val datos = _estado.value
 
         _registrando.value = true
-        _registroError.value  = null
+        _registroError.value = null
 
         viewModelScope.launch {
             try {
@@ -192,7 +206,7 @@ class UsuarioViewModel(app: Application): AndroidViewModel(app) {
                 }
 
                 // Registrar usuario en Room
-                withContext(Dispatchers.IO){
+                withContext(Dispatchers.IO) {
                     dao.insertar(
                         UsuarioEntity(
                             nombre = datos.nombre.trim(),
@@ -203,12 +217,12 @@ class UsuarioViewModel(app: Application): AndroidViewModel(app) {
                     )
                 }
 
-                //Eliminar la contrasena del estado temporal
+                // Eliminar la contrasena del estado temporal
                 _estado.update {
                     it.copy(clave = "")
                 }
 
-                //Preparar el correo para el futuro login
+                // Preparar el correo para el futuro login
                 _login.update {
                     it.copy(
                         correo = correoNormalizado,
@@ -217,19 +231,18 @@ class UsuarioViewModel(app: Application): AndroidViewModel(app) {
                     )
                 }
 
-                //Confirmar registro exitoso
+                // Confirmar registro exitoso
                 onListo()
-            } catch (e: CancellationException){
+            } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception){
+            } catch (e: Exception) {
                 _registroError.value =
                     "No se pudo registrar el usuario"
-            }finally {
+            } finally {
                 _registrando.value = false
             }
         }
     }
-
 
     // Registrar un usuario en MongoDB mediante Spring Boot
     fun guardarRemoto(onListo: () -> Unit) {
@@ -312,8 +325,8 @@ class UsuarioViewModel(app: Application): AndroidViewModel(app) {
         }
     }
 
-    //Actualizar correo del formulario de login
-    fun onLoginCorreoChange(valor: String){
+    // Actualizar correo del formulario de login
+    fun onLoginCorreoChange(valor: String) {
         _login.update {
             it.copy(
                 correo = valor,
@@ -523,5 +536,3 @@ class UsuarioViewModel(app: Application): AndroidViewModel(app) {
         SesionApi.cerrarSesion()
     }
 }
-
-
