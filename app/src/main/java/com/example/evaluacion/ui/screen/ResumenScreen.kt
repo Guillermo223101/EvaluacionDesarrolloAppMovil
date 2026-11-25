@@ -1,0 +1,148 @@
+
+package com.example.evaluacion.ui.screen
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.example.evaluacion.viewmodel.UsuarioViewModel
+
+import com.example.evaluacion.model.RolUsuario
+
+@Composable
+fun ResumenScreen(
+    viewModel: UsuarioViewModel,
+    onOpenQr: () -> Unit,
+    onCrearSolicitud: () -> Unit,
+    onVerSolicitudes: () -> Unit,
+    onVerSolicitudesRemotas: () -> Unit,
+    onVerSolicitudesTecnico: () -> Unit,
+    onCerrarSesion: () -> Unit
+) {
+
+    // Datos del usuario que inició sesión
+    val usuario by viewModel.usuarioAutenticado.collectAsState()
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+
+        Text(
+            text = "Resumen del Usuario",
+            style = MaterialTheme.typography.headlineMedium
+        )
+
+        // Si no existe una sesión activa
+        if (usuario == null) {
+
+            Text("No has iniciado sesión")
+
+            Button(
+                onClick = onCerrarSesion,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Ir al inicio de sesión")
+            }
+
+            return@Column
+        }
+
+        // Información del usuario autenticado
+        Text("Nombre: ${usuario?.nombre.orEmpty()}")
+        Text("Correo: ${usuario?.correo.orEmpty()}")
+        Text("Dirección: ${usuario?.direccion.orEmpty()}")
+        Text("Perfil: ${usuario?.rol?.name ?: "Sin perfil"}")
+        Text("Sesión iniciada correctamente")
+
+        HorizontalDivider()
+
+        Text(
+            text = "Funciones de la aplicación",
+            style = MaterialTheme.typography.titleMedium
+        )
+        when (usuario?.rol){
+            RolUsuario.CLIENTE -> {
+                Text("Funciones del cliente")
+
+                // Lector QR
+                Button(
+                    onClick = onOpenQr,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Abrir lector QR")
+                }
+
+                // Crear solicitud
+                Button(
+                    onClick = onCrearSolicitud,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Crear nueva solicitud")
+                }
+
+                // Consultar solicitudes locales
+                Button(
+                    onClick = onVerSolicitudes,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Mis solicitudes")
+                }
+            }
+
+            RolUsuario.ADMIN -> {
+                Text("Funciones del Administrador")
+
+                // Consultar solicitudes desde MongoDB
+                Button(
+                    onClick = onVerSolicitudesRemotas,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Supervisar solicitudes")
+                }
+            }
+
+            RolUsuario.TECNICO -> {
+                Text("Funciones del Tecnico")
+
+                if (usuario?.idRemoto != null) {
+                    Button(
+                        onClick = onVerSolicitudesTecnico,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Mis solicitudes asignadas")
+                    }
+                } else {
+                    Text(
+                        "Para consultar asignaciones debes " +
+                                "iniciar sesion con MongoDB."
+                    )
+                }
+            }
+
+
+            null -> {
+                Text("No hay un perfil activado")
+            }
+        }
+
+        HorizontalDivider()
+
+        // Cerrar sesión
+        OutlinedButton(
+            onClick = onCerrarSesion,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Cerrar sesión")
+        }
+    }
+}
