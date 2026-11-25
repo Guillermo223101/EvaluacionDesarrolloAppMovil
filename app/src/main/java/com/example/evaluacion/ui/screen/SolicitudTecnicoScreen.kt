@@ -9,7 +9,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 
+import com.example.evaluacion.utils.EvidenciaStorage
 import com.example.evaluacion.model.data.remote.SolicitudRemota
 import com.example.evaluacion.viewmodel.SolicitudTecnicoViewModel
 import java.util.Locale
@@ -18,7 +22,6 @@ import java.util.Locale
 fun SolicitudesTecnicoScreen(
     viewModel: SolicitudTecnicoViewModel
 ) {
-
     val estado by viewModel.estado.collectAsState()
 
     var solicitudParaResolver by remember { mutableStateOf<SolicitudRemota?>(null) }
@@ -115,6 +118,30 @@ fun SolicitudesTecnicoScreen(
                                     (solicitud.categoria ?: "Sin categoría")
                         )
 
+                        // Mostrar fotografia almacenada en MongoDB
+                        solicitud.evidenciaBase64
+                            ?.takeIf { it.isNotBlank() }
+                            ?.let { contenidoBase64 ->
+
+                                val imagenGuardada = remember(contenidoBase64) {
+                                    EvidenciaStorage.base64ABitmap(contenidoBase64)
+                                }
+
+                                imagenGuardada?.let { imagen ->
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    Text("Evidencia fotográfica")
+
+                                    Image(
+                                        bitmap = imagen.asImageBitmap(),
+                                        contentDescription = "Fotografía de la solicitud",
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(160.dp),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
+                            }
 
                         Text(
                             "Cliente: " +

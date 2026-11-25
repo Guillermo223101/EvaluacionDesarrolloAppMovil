@@ -8,10 +8,19 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import android.graphics.Bitmap
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 
 import com.example.evaluacion.viewmodel.SolicitudClienteViewModel
 import com.example.evaluacion.model.data.remote.SolicitudRemota
 import com.example.integraciones.recordarNotificadorNuevaSolicitud
+import com.example.evaluacion.utils.EvidenciaStorage
+
+import kotlinx.coroutines.launch
 
 @Composable
 fun SolicitudesClienteScreen(viewModel: SolicitudClienteViewModel) {
@@ -27,6 +36,39 @@ fun SolicitudesClienteScreen(viewModel: SolicitudClienteViewModel) {
     var categoriaSeleccionada by remember { mutableStateOf("") }
     var categoriaEditada by remember { mutableStateOf("") }
     val notificarSolicitud = recordarNotificadorNuevaSolicitud()
+
+    val alcance = rememberCoroutineScope()
+    var fotografia by remember { mutableStateOf<Bitmap?>(null) }
+    var fotografiaBase64 by remember { mutableStateOf<String?>(null) }
+    var procesandoFoto by remember { mutableStateOf(false) }
+    var errorFoto by remember { mutableStateOf<String?>(null) }
+
+
+    val lanzadorCamara = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { imagen ->
+        if (imagen != null) {
+            fotografia = imagen
+            fotografiaBase64 = null
+            errorFoto = null
+            procesandoFoto = true
+            alcance.launch {
+                try {
+                    val imagenCodificada = EvidenciaStorage.bitmapABase64(imagen)
+
+                    if (imagenCodificada.length > 1_400_000) {
+                        errorFoto = "La fotografía supera el tamaño permitido"
+                    } else {
+                        fotografiaBase64 = imagenCodificada
+                    }
+                } catch (error: Exception) {
+                    errorFoto = "No fue posible procesar la fotografía"
+                } finally {
+                    procesandoFoto = false
+                }
+            }
+        }
+    }
 
     LaunchedEffect(viewModel) {viewModel.consultarSolicitudes()}
 
@@ -64,12 +106,64 @@ fun SolicitudesClienteScreen(viewModel: SolicitudClienteViewModel) {
             alSeleccionar = { categoriaSeleccionada = it }
         )
 
+        Text("Evidencia fotográfica (opcional)")
+
+        OutlinedButton(
+            onClick = {
+                lanzadorCamara.launch(null)
+            },
+            enabled = !estado.guardando && !procesandoFoto,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                if (fotografia == null)
+                    "Tomar fotografía"
+                else
+                    "Cambiar fotografía"
+            )
+        }
+
+        fotografia?.let { imagen ->
+            Image(
+                bitmap = imagen.asImageBitmap(),
+                contentDescription = "Vista previa de la evidencia",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(160.dp),
+                contentScale = ContentScale.Crop
+            )
+
+            OutlinedButton(
+                onClick = {
+                    fotografia = null
+                    fotografiaBase64 = null
+                    errorFoto = null
+                },
+                enabled = !estado.guardando && !procesandoFoto
+            ) {
+                Text("Quitar fotografía")
+            }
+        }
+
+        if (procesandoFoto) {
+            Text("Procesando fotografía...")
+        }
+
+        errorFoto?.let { mensaje ->
+            Text(
+                text = mensaje,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
+
+
         Button(
             onClick = {
                 viewModel.crearSolicitud(
-                    titulo,
-                    descripcion,
-                    categoriaSeleccionada
+                    titulo = titulo,
+                    descripcion = descripcion,
+                    categoria = categoriaSeleccionada,
+                    evidenciaBase64 = fotografiaBase64
                 ) { codigo, tituloCreado ->
 
                     notificarSolicitud(codigo, tituloCreado)
@@ -77,10 +171,17 @@ fun SolicitudesClienteScreen(viewModel: SolicitudClienteViewModel) {
                     titulo = ""
                     descripcion = ""
                     categoriaSeleccionada = ""
+
+                    fotografia = null
+                    fotografiaBase64 = null
+                    errorFoto = null
                 }
             },
             modifier = Modifier.fillMaxWidth(),
-            enabled = !estado.guardando
+            enabled = !estado.guardando &&
+                    !procesandoFoto &&
+                    errorFoto == null &&
+                    (fotografia == null || fotografiaBase64 != null)
         ) {
             Text(
                 if (estado.guardando)
@@ -138,6 +239,31 @@ fun SolicitudesClienteScreen(viewModel: SolicitudClienteViewModel) {
                         Text("Categoria: " +
                                 (solicitud.categoria ?: "Sin categoria"))
 
+
+                        // Mostrar fotografia almacenada en MongoDB
+                        solicitud.evidenciaBase64
+                            ?.takeIf { it.isNotBlank() }
+                            ?.let { contenidoBase64 ->
+
+                                val imagenGuardada = remember(contenidoBase64) {
+                                    EvidenciaStorage.base64ABitmap(contenidoBase64)
+                                }
+
+                                imagenGuardada?.let { imagen ->
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    Text("Evidencia fotográfica")
+
+                                    Image(
+                                        bitmap = imagen.asImageBitmap(),
+                                        contentDescription = "Fotografía de la solicitud",
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(160.dp),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
+                            }
 
                         Spacer(modifier = Modifier.height(8.dp))
 

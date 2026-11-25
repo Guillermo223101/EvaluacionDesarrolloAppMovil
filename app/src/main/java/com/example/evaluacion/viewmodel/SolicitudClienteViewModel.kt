@@ -83,6 +83,7 @@ class SolicitudClienteViewModel : ViewModel(){
         titulo: String,
         descripcion: String,
         categoria: String,
+        evidenciaBase64: String? = null,
         alGuardar: (String, String) -> Unit
     ) {
 
@@ -133,7 +134,8 @@ class SolicitudClienteViewModel : ViewModel(){
                     DatosNuevaSolicitud(
                         titulo = titulo.trim(),
                         descripcion = descripcion.trim(),
-                        categoria = categoria
+                        categoria = categoria,
+                        evidenciaBase64 = evidenciaBase64
                     )
                 )
 
