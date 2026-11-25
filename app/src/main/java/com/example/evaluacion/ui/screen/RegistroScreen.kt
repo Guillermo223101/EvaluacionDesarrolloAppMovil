@@ -20,19 +20,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import com.example.evaluacion.viewmodel.UsuarioViewModel
-
-
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Icon
-
 import androidx.compose.material3.TextButton
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.OutlinedButton
+
+import com.example.evaluacion.viewmodel.UsuarioViewModel
 
 @Composable
 fun RegistroScreen(
@@ -176,10 +175,10 @@ fun RegistroScreen(
             )
         }
 
-        // Botón para registrar un usuario
+        // Registro remoto en MongoDB
         Button(
             onClick = {
-                viewModel.guardar(
+                viewModel.guardarRemoto(
                     onListo = onRegistrado
                 )
             },
@@ -190,8 +189,21 @@ fun RegistroScreen(
                 if (registrando)
                     "Registrando..."
                 else
-                    "Registrar"
+                    "Registrarme en MongoDB"
             )
+        }
+
+        // Conservar el registro local de Room
+        OutlinedButton(
+            onClick = {
+                viewModel.guardar(
+                    onListo = onRegistrado
+                )
+            },
+            enabled = !registrando,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Registrarme solo en este dispositivo")
         }
 
         // Volver al inicio de sesión
@@ -202,6 +214,5 @@ fun RegistroScreen(
         ) {
             Text("¿Ya tienes cuenta? Inicia sesión")
         }
-
     }
 }

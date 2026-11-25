@@ -13,6 +13,7 @@ import com.example.evaluacion.model.RolUsuario
 import com.example.evaluacion.model.data.remote.LoginRemotoRequest
 import com.example.evaluacion.model.data.remote.RetrofitClient
 import com.example.evaluacion.model.data.remote.SesionApi
+import com.example.evaluacion.model.data.remote.RegistroRemotoRequest
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -224,6 +225,88 @@ class UsuarioViewModel(app: Application): AndroidViewModel(app) {
                 _registroError.value =
                     "No se pudo registrar el usuario"
             }finally {
+                _registrando.value = false
+            }
+        }
+    }
+
+
+    // Registrar un usuario en MongoDB mediante Spring Boot
+    fun guardarRemoto(onListo: () -> Unit) {
+        if (_registrando.value) return
+        // Reutilizar las validaciones del formulario
+        if (!validarFormulario()) return
+        val datos = _estado.value
+        // Spring Boot exige al menos 8 caracteres
+        if (datos.clave.length < 8) {
+            _estado.update {
+                it.copy(
+                    errores = it.errores.copy(
+                        clave = "La contraseña debe tener al menos 8 caracteres"
+                    )
+                )
+            }
+            return
+        }
+
+        _registrando.value = true
+        _registroError.value = null
+
+        viewModelScope.launch {
+            try {
+                val correoNormalizado =
+                    datos.correo.trim().lowercase()
+
+                // Registrar al usuario en MongoDB
+                val usuarioRegistrado =
+                    RetrofitClient.usuarios.registrarUsuario(
+                        RegistroRemotoRequest(
+                            nombre = datos.nombre.trim(),
+                            correo = correoNormalizado,
+                            clave = datos.clave,
+                            direccion = datos.direccion.trim()
+                        )
+                    )
+
+                // Limpiar la contraseña del formulario
+                _estado.update {
+                    it.copy(clave = "")
+                }
+
+                // Preparar el login remoto
+                _login.update {
+                    it.copy(
+                        correo = usuarioRegistrado.correo,
+                        clave = "",
+                        error = null
+                    )
+                }
+
+                // Regresar a la pantalla de login
+                onListo()
+
+            } catch (error: CancellationException) {
+                throw error
+
+            } catch (error: HttpException) {
+
+                _registroError.value = when (error.code()) {
+                    400 -> "Revisa los datos ingresados"
+                    409 -> "Este correo ya esta registrado en MongoDB"
+                    else -> "Error del servidor: ${error.code()}"
+                }
+
+            } catch (error: IOException) {
+
+                _registroError.value =
+                    "No se pudo conectar con Spring Boot"
+
+            } catch (error: Exception) {
+
+                _registroError.value =
+                    "No fue posible completar el registro remoto"
+
+            } finally {
                 _registrando.value = false
             }
         }
