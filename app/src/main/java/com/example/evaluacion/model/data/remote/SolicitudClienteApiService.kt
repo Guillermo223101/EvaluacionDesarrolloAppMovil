@@ -11,12 +11,15 @@ import retrofit2.http.Path
 
 data class DatosNuevaSolicitud(
     val titulo: String,
-    val descripcion: String
+    val descripcion: String,
+    val categoria: String? = null,
+    val evidenciaBase64: String? = null
 )
 
 data class DatosEditarSolicitud(
     val titulo: String,
-    val descripcion: String
+    val descripcion: String,
+    val categoria: String? = null
 )
 
 interface SolicitudClienteApiService{

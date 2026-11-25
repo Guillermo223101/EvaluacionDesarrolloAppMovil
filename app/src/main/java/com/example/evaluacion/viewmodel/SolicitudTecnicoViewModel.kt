@@ -7,6 +7,8 @@ import com.example.evaluacion.model.data.remote.DatosCambioEstadoTecnico
 import com.example.evaluacion.model.data.remote.RetrofitClient
 import com.example.evaluacion.model.data.remote.SesionApi
 import com.example.evaluacion.model.data.remote.SolicitudRemota
+import com.example.evaluacion.model.data.remote.AvanceTecnicoRemoto
+import com.example.evaluacion.model.data.remote.DatosNuevoAvance
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,7 +24,12 @@ data class EstadoSolicitudesTecnico(
     val actualizando: Boolean = false,
     val solicitudesAsignadas: List<SolicitudRemota> = emptyList(),
     val mensajeError: String? = null,
-    val mensajeExito: String? = null
+    val mensajeExito: String? = null,
+    val cargandoAvances: Boolean = false,
+    val guardandoAvance: Boolean = false,
+    val avances: List<AvanceTecnicoRemoto> = emptyList(),
+    val errorAvances: String? = null,
+    val mensajeAvances: String? = null
 )
 
 class SolicitudTecnicoViewModel : ViewModel() {
@@ -193,6 +200,123 @@ class SolicitudTecnicoViewModel : ViewModel() {
             } finally {
                 _estado.update {
                     it.copy(actualizando = false)
+                }
+            }
+        }
+    }
+
+    // Consultar historial de avances
+    fun consultarAvances(identificadorSolicitud: String) {
+
+        val autorizacion = obtenerAutorizacion() ?: run {
+            _estado.update {
+                it.copy(errorAvances = "Debes iniciar sesion nuevamente")
+            }
+            return
+        }
+
+        viewModelScope.launch {
+            _estado.update {
+                it.copy(
+                    cargandoAvances = true,
+                    avances = emptyList(),
+                    errorAvances = null,
+                    mensajeAvances = null
+                )
+            }
+
+            try {
+                val avancesObtenidos =
+                    RetrofitClient.solicitudesTecnico.consultarAvances(
+                        autorizacion,
+                        identificadorSolicitud
+                    )
+
+                _estado.update {
+                    it.copy(avances = avancesObtenidos)
+                }
+
+            } catch (error: CancellationException) {
+                throw error
+
+            } catch (error: Exception) {
+                _estado.update {
+                    it.copy(errorAvances = describirError(error))
+                }
+
+            } finally {
+                _estado.update {
+                    it.copy(cargandoAvances = false)
+                }
+            }
+        }
+    }
+
+    // Registrar un comentario del tecnico
+    fun registrarAvance(
+        identificadorSolicitud: String,
+        comentario: String,
+        alCompletar: () -> Unit
+    ) {
+        if (_estado.value.guardandoAvance) return
+
+        val comentarioValidado = comentario.trim()
+
+        if (comentarioValidado.isBlank() ||
+            comentarioValidado.length > 1000) {
+
+            _estado.update {
+                it.copy(
+                    errorAvances = "Ingresa un comentario de 1 a 1000 caracteres"
+                )
+            }
+            return
+        }
+
+        val autorizacion = obtenerAutorizacion() ?: run {
+            _estado.update {
+                it.copy(errorAvances = "Debes iniciar sesion nuevamente")
+            }
+            return
+        }
+
+        viewModelScope.launch {
+            _estado.update {
+                it.copy(
+                    guardandoAvance = true,
+                    errorAvances = null,
+                    mensajeAvances = null
+                )
+            }
+
+            try {
+                val avanceGuardado =
+                    RetrofitClient.solicitudesTecnico.registrarAvance(
+                        autorizacion,
+                        identificadorSolicitud,
+                        DatosNuevoAvance(comentarioValidado)
+                    )
+
+                _estado.update { estadoActual ->
+                    estadoActual.copy(
+                        avances = estadoActual.avances + avanceGuardado,
+                        mensajeAvances = "Avance registrado correctamente"
+                    )
+                }
+
+                alCompletar()
+
+            } catch (error: CancellationException) {
+                throw error
+
+            } catch (error: Exception) {
+                _estado.update {
+                    it.copy(errorAvances = describirError(error))
+                }
+
+            } finally {
+                _estado.update {
+                    it.copy(guardandoAvance = false)
                 }
             }
         }

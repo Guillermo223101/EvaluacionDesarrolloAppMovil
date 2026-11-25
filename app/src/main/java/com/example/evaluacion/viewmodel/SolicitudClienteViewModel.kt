@@ -82,7 +82,9 @@ class SolicitudClienteViewModel : ViewModel(){
     fun crearSolicitud(
         titulo: String,
         descripcion: String,
-        alGuardar: () -> Unit
+        categoria: String,
+        evidenciaBase64: String? = null,
+        alGuardar: (String, String) -> Unit
     ) {
 
         if (_estado.value.guardando) return
@@ -101,6 +103,15 @@ class SolicitudClienteViewModel : ViewModel(){
             return
         }
 
+
+        if (categoria !in listOf("Hardware", "Software", "Redes")) {
+            _estado.update {
+                it.copy(mensajeError = "Selecciona una categoría válida")
+            }
+            return
+        }
+
+
         val autorizacion = obtenerAutorizacion()
 
         if (autorizacion == null) {
@@ -117,12 +128,21 @@ class SolicitudClienteViewModel : ViewModel(){
             }
 
             try {
+                val soliciudCreada =
                 RetrofitClient.solicitudesCliente.crearPropia(
                     autorizacion,
                     DatosNuevaSolicitud(
                         titulo = titulo.trim(),
-                        descripcion = descripcion.trim()
+                        descripcion = descripcion.trim(),
+                        categoria = categoria,
+                        evidenciaBase64 = evidenciaBase64
                     )
+                )
+
+                //Notificar cuando Mongo confirme
+                alGuardar(
+                    soliciudCreada.id ?: "MongoDB",
+                    soliciudCreada.titulo
                 )
 
                 val solicitudes = RetrofitClient.solicitudesCliente
@@ -131,8 +151,6 @@ class SolicitudClienteViewModel : ViewModel(){
                 _estado.update {
                     it.copy(solicitudes = solicitudes)
                 }
-
-                alGuardar()
 
             } catch (error: CancellationException) {
                 throw error
@@ -166,6 +184,7 @@ class SolicitudClienteViewModel : ViewModel(){
         identificadorSolicitud: String,
         titulo: String,
         descripcion: String,
+        categoria: String?,
         alCompletar: () -> Unit
     ) {
         if (_estado.value.guardando) return
@@ -177,6 +196,16 @@ class SolicitudClienteViewModel : ViewModel(){
             }
             return
         }
+
+        if (categoria != null &&
+            categoria !in listOf("Hardware", "Software", "Redes")
+        ) {
+            _estado.update {
+                it.copy(mensajeError = "Selecciona una categoría válida")
+            }
+            return
+        }
+
 
         val autorizacion = obtenerAutorizacion()
 
@@ -199,7 +228,8 @@ class SolicitudClienteViewModel : ViewModel(){
                         identificadorSolicitud,
                         DatosEditarSolicitud(
                             titulo.trim(),
-                            descripcion.trim()
+                            descripcion.trim(),
+                            categoria = categoria
                         )
                     )
 
